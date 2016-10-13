@@ -25,11 +25,17 @@ ffft library is provided under its own terms -- see ffft.S for specifics.
 // IMPORTANT: FFT_N should be #defined as 128 in ffft.h.
 
 #include <avr/pgmspace.h>
-#include <ffft.h>
+#include "ffft/ffft.h"
 #include <math.h>
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_LEDBackpack.h>
+#include <LedControl.h>
+
+/* Display PINs */
+#define CLK     8
+#define CS      9
+#define DIN     10
+
+/* Microphone PIN */
+#define MIC     A0
 
 // Microphone connects to Analog Pin 0.  Corresponding ADC channel number
 // varies among boards...it's ADC0 on Uno and Mega, ADC7 on Leonardo.
@@ -107,9 +113,10 @@ static const uint8_t PROGMEM
     col0data, col1data, col2data, col3data,
     col4data, col5data, col6data, col7data };
 
-Adafruit_BicolorMatrix matrix = Adafruit_BicolorMatrix();
+LedControl matrix = LedControl(DIN, CLK, CS, 1);
 
 void setup() {
+  cli();
   uint8_t i, j, nBins, binNum, *data;
 
   memset(peak, 0, sizeof(peak));
@@ -125,7 +132,9 @@ void setup() {
       colDiv[i] += pgm_read_byte(&data[j]);
   }
 
-  matrix.begin(0x70);
+  matrix.shutdown(0, false);
+  matrix.setIntensity(0, 8);
+
 
   // Init ADC free-run mode; f = ( 16MHz/prescaler ) / 13 cycles/conversion 
   ADMUX  = ADC_CHANNEL; // Channel sel, right-adj, use AREF pin
@@ -155,24 +164,19 @@ void loop() {
   fft_output(bfly_buff, spectrum); // Complex -> spectrum
 
   // Remove noise and apply EQ levels
-  for(x=0; x<FFT_N/2; x++) {
+  for(x = 0; x < FFT_N/2; x++) {
     L = pgm_read_byte(&noise[x]);
-    spectrum[x] = (spectrum[x] <= L) ? 0 :
-      (((spectrum[x] - L) * (256L - pgm_read_byte(&eq[x]))) >> 8);
+    spectrum[x] = (spectrum[x] <= L) ? 0 : (((spectrum[x] - L) * (256L - pgm_read_byte(&eq[x]))) >> 8);
   }
 
-  // Fill background w/colors, then idle parts of columns will erase
-  matrix.fillRect(0, 0, 8, 3, LED_RED);    // Upper section
-  matrix.fillRect(0, 3, 8, 2, LED_YELLOW); // Mid
-  matrix.fillRect(0, 5, 8, 3, LED_GREEN);  // Lower section
-
   // Downsample spectrum output to 8 columns:
-  for(x=0; x<8; x++) {
+  for(x = 0; x < 8; x++) {
     data   = (uint8_t *)pgm_read_word(&colData[x]);
     nBins  = pgm_read_byte(&data[0]) + 2;
     binNum = pgm_read_byte(&data[1]);
-    for(sum=0, i=2; i<nBins; i++)
+    for(sum = 0, i = 2; i < nBins; i++) {
       sum += spectrum[binNum++] * pgm_read_byte(&data[i]); // Weighted
+    }
     col[x][colCount] = sum / colDiv[x];                    // Average
     minLvl = maxLvl = col[x][0];
     for(i=1; i<10; i++) { // Get range of prior 10 frames
@@ -198,30 +202,44 @@ void loop() {
     else if(level > 10) c = 10; // Allow dot to go a couple pixels off top
     else                c = (uint8_t)level;
 
-    if(c > peak[x]) peak[x] = c; // Keep dot on top
+    if(c > peak[x]) {
+      peak[x] = c; // Keep dot on top
+    }
 
     if(peak[x] <= 0) { // Empty column?
-      matrix.drawLine(x, 0, x, 7, LED_OFF);
+//      matrix.drawLine(x, 0, x, 7, LED_OFF);
+      matrix.setRow(0, x, 0);
       continue;
-    } else if(c < 8) { // Partial column?
-      matrix.drawLine(x, 0, x, 7 - c, LED_OFF);
+    } else if(peak[x] < 8) { // Partial column?
+      byte row = 0;
+      for (int i = 0; i < peak[x]; i++) {
+        row |= (1 << (8 - i));
+      }
+      matrix.setRow(0, x, row);
     }
 
     // The 'peak' dot color varies, but doesn't necessarily match
     // the three screen regions...yellow has a little extra influence.
-    y = 8 - peak[x];
-    if(y < 2)      matrix.drawPixel(x, y, LED_RED);
-    else if(y < 6) matrix.drawPixel(x, y, LED_YELLOW);
-    else           matrix.drawPixel(x, y, LED_GREEN);
+//    y = 8 - peak[x];
+//    matrix.setLed(0, x, y, 1);  
+//    Serial.print(x);
+//    Serial.print(": ");
+//    Serial.println(y);
+      
+//    if(y < 2)      matrix.drawPixel(x, y, LED_RED);
+//    else if(y < 6) matrix.drawPixel(x, y, LED_YELLOW);
+//    else           matrix.drawPixel(x, y, LED_GREEN);
   }
 
-  matrix.writeDisplay();
+//  matrix.writeDisplay();
 
   // Every third frame, make the peak pixels drop by 1:
   if(++dotCount >= 3) {
     dotCount = 0;
-    for(x=0; x<8; x++) {
-      if(peak[x] > 0) peak[x]--;
+    for(x = 0; x < 8; x++) {
+      if(peak[x] > 0) {
+        peak[x]--;
+      }
     }
   }
 
@@ -237,6 +255,8 @@ ISR(ADC_vect) { // Audio-sampling interrupt
      (sample < (512+noiseThreshold))) ? 0 :
     sample - 512; // Sign-convert for FFT; -512 to +511
 
-  if(++samplePos >= FFT_N) ADCSRA &= ~_BV(ADIE); // Buffer full, interrupt off
+  if(++samplePos >= FFT_N) {
+    ADCSRA &= ~_BV(ADIE); // Buffer full, interrupt off
+  }
 }
 
