@@ -1,21 +1,22 @@
 /*
-PICCOLO is a tiny Arduino-based audio visualizer.
+Arduino-based audio visualizer.
 
 Hardware requirements:
  - Most Arduino or Arduino-compatible boards (ATmega 328P or better).
- - Adafruit Bicolor LED Matrix with I2C Backpack (ID: 902)
  - Adafruit Electret Microphone Amplifier (ID: 1063)
+ - 8x8 LED matrix display with MAX7219 driver
  - Optional: battery for portable use (else power through USB)
 Software requirements:
  - elm-chan's ffft library for Arduino
 
-Connections:
+Wiring (for Arduino UNO):
  - 3.3V to mic amp+ and Arduino AREF pin <-- important!
  - GND to mic amp-
  - Analog pin 0 to mic amp output
- - +5V, GND, SDA (or analog 4) and SCL (analog 5) to I2C Matrix backpack
+ - +5V, GND, CLK (8 pin), CS (9 pin), DIN (10 pin)
 
-Written by Adafruit Industries.  Distributed under the BSD license --
+Modified by Sergey Royz to support for 8x8 display with MAX7219 driver.
+Originally written by Adafruit Industries.  Distributed under the BSD license --
 see license.txt for more information.  This paragraph must be included
 in any redistribution.
 
@@ -207,7 +208,6 @@ void loop() {
     }
 
     if(peak[x] <= 0) { // Empty column?
-//      matrix.drawLine(x, 0, x, 7, LED_OFF);
       matrix.setRow(0, x, 0);
       continue;
     } else if(peak[x] < 8) { // Partial column?
@@ -218,20 +218,7 @@ void loop() {
       matrix.setRow(0, x, row);
     }
 
-    // The 'peak' dot color varies, but doesn't necessarily match
-    // the three screen regions...yellow has a little extra influence.
-//    y = 8 - peak[x];
-//    matrix.setLed(0, x, y, 1);  
-//    Serial.print(x);
-//    Serial.print(": ");
-//    Serial.println(y);
-      
-//    if(y < 2)      matrix.drawPixel(x, y, LED_RED);
-//    else if(y < 6) matrix.drawPixel(x, y, LED_YELLOW);
-//    else           matrix.drawPixel(x, y, LED_GREEN);
   }
-
-//  matrix.writeDisplay();
 
   // Every third frame, make the peak pixels drop by 1:
   if(++dotCount >= 3) {
