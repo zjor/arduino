@@ -14,9 +14,13 @@ coloured display with simple 8x8 LED display with MAX7219 driver
 
 ![Components](http://res.cloudinary.com/zjor-storage/image/upload/v1476738648/arduino_parts_npnilj.jpg)
 
+![Assembly](http://res.cloudinary.com/zjor-storage/image/upload/v1476738647/arduino_assembly_dmgpqz.jpg)
+
 ## Schema ##
 
-TODO:
+![Schema](http://res.cloudinary.com/zjor-storage/image/upload/v1477000192/schema_bb_jgzcmz.png)
+
+Make sure that VCC of the microphone is connected to 3.3V and 3.3V PIN is connected to AREF.
 
 ## Working demo ##
 
