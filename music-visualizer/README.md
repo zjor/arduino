@@ -24,4 +24,5 @@ Make sure that VCC of the microphone is connected to 3.3V and 3.3V PIN is connec
 
 ## Working demo ##
 
-TODO: video
+[![youtube](http://img.youtube.com/vi/xrqaq0TOvcs/0.jpg)]
+(https://www.youtube.com/watch?v=xrqaq0TOvcs "Arduino: Music Visualizer")
