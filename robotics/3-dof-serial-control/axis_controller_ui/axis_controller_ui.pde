@@ -27,7 +27,8 @@ void setup() {
     text("Port ready", 0, lineHeight);
   } catch (Exception e) {
     text("Unable to connect to arduino: " + e.getMessage(), 0, lineHeight);        
-  }  
+  }    
+  
 }
 
 
