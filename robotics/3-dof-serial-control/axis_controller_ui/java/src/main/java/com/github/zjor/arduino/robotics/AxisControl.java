@@ -9,6 +9,7 @@ public class AxisControl {
 
     public static final int MIN_THRESHOLD = 0;
     public static final int MAX_THRESHOLD = 180;
+    public static final int DELTA = 5;
 
     private PortHolder portHolder;
 
@@ -27,8 +28,8 @@ public class AxisControl {
         this.portHolder = portHolder;
         this.index = index;
         this.value = initValue;
-        inc = new Control(incKeyCode, false, () -> setValue(Math.min(MAX_THRESHOLD, value + 1)));
-        dec = new Control(decKeyCode, false, () -> setValue(Math.max(MIN_THRESHOLD, value - 1)));
+        inc = new Control(incKeyCode, false, () -> setValue(Math.min(MAX_THRESHOLD, value + DELTA)));
+        dec = new Control(decKeyCode, false, () -> setValue(Math.max(MIN_THRESHOLD, value - DELTA)));
         controls.add(inc);
         controls.add(dec);
     }

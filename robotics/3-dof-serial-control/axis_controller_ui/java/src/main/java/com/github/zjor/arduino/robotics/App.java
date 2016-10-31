@@ -61,6 +61,12 @@ public class App extends PApplet implements PortHolder {
             a.getDec().draw(this, x, y + 2 * blockHeight, blockWidth, blockHeight);
 
         });
+
+        getPort().ifPresent(p -> {
+            if (p.available() > 0) {
+                System.out.print(p.readString());
+            }
+        });
     }
 
     @Override
