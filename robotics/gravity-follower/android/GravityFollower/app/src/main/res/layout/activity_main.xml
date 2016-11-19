@@ -38,6 +38,7 @@
     </LinearLayout>
 
     <Switch
+        android:id="@+id/ledSwitch"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="@dimen/activity_vertical_margin"
@@ -67,8 +68,8 @@
             android:id="@+id/seekBar1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:max="180"
-            android:layout_weight="0.75" />
+            android:layout_weight="0.75"
+            android:max="180" />
 
     </LinearLayout>
 
@@ -95,8 +96,8 @@
             android:id="@+id/seekBar2"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:max="180"
-            android:layout_weight="0.75" />
+            android:layout_weight="0.75"
+            android:max="180" />
 
     </LinearLayout>
 
@@ -123,8 +124,8 @@
             android:id="@+id/seekBar3"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:max="180"
-            android:layout_weight="0.75" />
+            android:layout_weight="0.75"
+            android:max="180" />
 
     </LinearLayout>
 
@@ -145,25 +146,36 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="0.33"
-            android:textAlignment="center"
-            android:text="130"/>
+            android:text="130"
+            android:textAlignment="center" />
 
         <TextView
             android:id="@+id/gravityY"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="0.33"
-            android:textAlignment="center"
-            android:text="130"/>
+            android:text="130"
+            android:textAlignment="center" />
 
         <TextView
             android:id="@+id/gravityZ"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="0.34"
-            android:textAlignment="center"
-            android:text="130"/>
+            android:text="130"
+            android:textAlignment="center" />
 
     </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <TextView
+            android:id="@+id/received"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </ScrollView>
 
 </LinearLayout>
