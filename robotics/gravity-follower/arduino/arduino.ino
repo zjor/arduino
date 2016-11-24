@@ -15,6 +15,9 @@ struct t_command  {
 char buf[64];
 int i = 0;
 
+int pos[3] = {90,90,90};
+int target[3] = {90,90,90};
+
 void setup() {
   Serial.begin(9600);
   pwm.begin();  
@@ -39,11 +42,20 @@ void loop() {
     }
   }
 
+  for (int j = 0; j < 3; j++) {
+    int e = target[j] - pos[j];
+    if (e != 0) {
+      e = e / abs(e);
+    }
+    if (abs(e) > 0) {
+      pos[j] += e;
+      moveServo(j, pos[j]);
+    }
+  }
+
 }
 
 void handleCommand(char* buf) {
-  Serial.print("Handling: ");
-  Serial.println(buf);
   if (buf[0] == 'L') {
     handleLed(buf[2]);    
   } else if (buf[0] == 'S') {
@@ -58,21 +70,18 @@ void handleLed(char enabled) {
 }
 
 void handleServo(char* buf) {
-  moveServo(parseBuffer(buf));
+  struct t_command cmd = parseBuffer(buf);
+  target[cmd.index] = cmd.value;
 }
 
 struct t_command parseBuffer(char* buf) {
-  Serial.print("Raw buffer: ");
-  Serial.println(buf);  
   String str(buf);
   int index = String(str[0]).toInt();
   int value = str.substring(str.indexOf(':') + 1).toInt();
-  Serial.print("Index: "); Serial.print(index);
-  Serial.print("; Value: ");Serial.println(value);
   return {index, value};
 }
 
-void moveServo(struct t_command command) {
-  pwm.setPWM(command.index, 0, map(command.value, 0, 180, SERVOMIN, SERVOMAX));
+void moveServo(int index, int value) {
+  pwm.setPWM(index, 0, map(value, 0, 180, SERVOMIN, SERVOMAX));
 }
 
