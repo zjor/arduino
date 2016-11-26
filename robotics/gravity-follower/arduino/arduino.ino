@@ -17,6 +17,7 @@ int i = 0;
 
 int pos[3] = {90,90,90};
 int target[3] = {90,90,90};
+int nop[3] = {0, 0, 0};
 
 void setup() {
   Serial.begin(9600);
@@ -43,13 +44,18 @@ void loop() {
   }
 
   for (int j = 0; j < 3; j++) {
-    int e = target[j] - pos[j];
-    if (e != 0) {
-      e = e / abs(e);
-    }
-    if (abs(e) > 0) {
-      pos[j] += e;
-      moveServo(j, pos[j]);
+    if (nop[j] > 0) {
+      nop[j]--;
+    } else {
+      int e = target[j] - pos[j];
+      if (e != 0) {
+        e = e / abs(e);
+      }
+      if (abs(e) > 0) {
+        pos[j] += e;
+        moveServo(j, pos[j]);
+      }
+      nop[j] = 50 * (180 / (abs(target[j] - pos[j]) + 1));
     }
   }
 
@@ -57,7 +63,7 @@ void loop() {
 
 void handleCommand(char* buf) {
   if (buf[0] == 'L') {
-    handleLed(buf[2]);    
+    handleLed(buf[2] - '0');    
   } else if (buf[0] == 'S') {
     handleServo(&buf[2]);
   } else {

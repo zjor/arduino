@@ -44,7 +44,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
 
     private static final float MAX_SENSOR_VALUE = 9.5f; //9.81f;
-    private static final int WINDOW_SIZE = 5;
+    private static final int WINDOW_SIZE = 3;
 
     private Switch ledSwitch;
     private TextView deviceStatusTextView;
