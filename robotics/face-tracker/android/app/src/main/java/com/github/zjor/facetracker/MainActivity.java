@@ -13,7 +13,7 @@ import android.widget.FrameLayout;
 
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback{
+public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback {
 
     public static final String TAG = MainActivity.class.getSimpleName();
 
@@ -70,9 +70,23 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
     };
 
+    private Camera openFrontalCamera() {
+        for (int i = 0; i < Camera.getNumberOfCameras(); i++) {
+            Camera.CameraInfo info = new Camera.CameraInfo();
+            Camera.getCameraInfo(i, info);
+            if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+                return Camera.open(i);
+            }
+        }
+        return null;
+    }
+
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
-        mCamera = Camera.open();
+        mCamera = openFrontalCamera();
+        if (mCamera == null) {
+            throw new RuntimeException("Unable to open frontal camera");
+        }
         mCamera.setFaceDetectionListener(faceDetectionListener);
         mCamera.startFaceDetection();
         try {

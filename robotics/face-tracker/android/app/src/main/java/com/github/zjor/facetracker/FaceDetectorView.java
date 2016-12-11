@@ -59,7 +59,7 @@ public class FaceDetectorView extends View {
 
     private RectF translateRect(RectF r) {
         Matrix matrix = new Matrix();
-        Utils.prepareMatrix(matrix, false, mDisplayOrientation, getWidth(), getHeight());
+        Utils.prepareMatrix(matrix, true, mDisplayOrientation, getWidth(), getHeight());
         matrix.postRotate(mOrientation);
         matrix.mapRect(r);
         return r;
@@ -85,7 +85,7 @@ public class FaceDetectorView extends View {
             float s = .0f;
             Camera.Face mainFace = null;
             for (Camera.Face f : faces) {
-                float ts = f.rect.width() * f.rect.height();
+                float ts = Math.abs(f.rect.width() * f.rect.height());
                 if (ts > s) {
                     s = ts;
                     mainFace = f;
