@@ -1,8 +1,16 @@
 package com.github.zjor.facetracker;
 
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.graphics.RectF;
 import android.hardware.Camera;
 import android.hardware.SensorManager;
+import android.hardware.usb.UsbDevice;
+import android.hardware.usb.UsbDeviceConnection;
+import android.hardware.usb.UsbManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -10,12 +18,22 @@ import android.view.OrientationEventListener;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
+import com.felhr.usbserial.UsbSerialDevice;
+import com.felhr.usbserial.UsbSerialInterface;
+
+import java.io.UnsupportedEncodingException;
 import java.util.List;
+
+import rx.functions.Action1;
+import rx.subscriptions.CompositeSubscription;
 
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback {
 
     public static final String TAG = MainActivity.class.getSimpleName();
+
+    private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
 
     private Camera mCamera;
     private SurfaceView mView;
@@ -27,6 +45,58 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     private int mDisplayRotation;
     private int mDisplayOrientation;
+
+    private UsbManager usbManager;
+    private UsbDevice device;
+
+    private ArduinoDevice arduinoDevice;
+
+    private CompositeSubscription subscriptions = new CompositeSubscription();
+
+
+    private UsbSerialInterface.UsbReadCallback usbReadCallback = new UsbSerialInterface.UsbReadCallback() {
+        @Override
+        public void onReceivedData(final byte[] bytes) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        StringBuilder text = new StringBuilder();
+                        text.insert(0, new String(bytes, "UTF-8"));
+                        text.setLength(1024);
+                        Toast.makeText(MainActivity.this, "Received: " + text, Toast.LENGTH_SHORT).show();
+                    } catch (UnsupportedEncodingException e) {
+                        Log.wtf(this.getClass().getSimpleName(), e);
+                    }
+                }
+            });
+
+        }
+    };
+
+    private final BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(ACTION_USB_PERMISSION)) {
+                boolean granted = intent.getExtras().getBoolean(UsbManager.EXTRA_PERMISSION_GRANTED);
+                if (granted) {
+                    try {
+                        UsbDeviceConnection connection = usbManager.openDevice(device);
+                        arduinoDevice = new ArduinoDevice(UsbSerialDevice.createUsbSerialDevice(device, connection));
+                        if (!arduinoDevice.open(usbReadCallback)) {
+                            Toast.makeText(MainActivity.this, "Failed to open Arduino", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(MainActivity.this, "Connection established with Arduino", Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (Throwable t) {
+                        Toast.makeText(MainActivity.this, "Failed to open connection to Arduino", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+        }
+    };
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +110,22 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         mOrientationEventListener = new SimpleOrientationEventListener(this);
         mOrientationEventListener.enable();
+
+        usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
+
+        subscriptions.add(mOverlay.getFaceStream().subscribe(new Action1<RectF>() {
+            @Override
+            public void call(RectF rect) {
+                int x = MathUtils.map(rect.centerX(), 100, 600, 0, 180);
+                int y = MathUtils.map(rect.centerY(), 100, 900, 0, 180);
+                Log.i(TAG, "Face: " + x + " : " + y);
+
+                if (arduinoDevice != null && arduinoDevice.isOpened()) {
+                    arduinoDevice.servo(1, x);
+                    arduinoDevice.servo(2, y);
+                }
+            }
+        }));
 
     }
 
@@ -55,12 +141,30 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     protected void onPause() {
         super.onPause();
         mOrientationEventListener.disable();
+
+        unregisterReceiver(broadcastReceiver);
+        if (arduinoDevice != null) {
+            arduinoDevice.close();
+        }
+
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         mOrientationEventListener.enable();
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(ACTION_USB_PERMISSION);
+        registerReceiver(broadcastReceiver, filter);
+        initArduinoDevice();
+
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        subscriptions.unsubscribe();
     }
 
     private Camera.FaceDetectionListener faceDetectionListener = new Camera.FaceDetectionListener() {
@@ -159,5 +263,38 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
     }
 
+
+    private UsbDevice discoverArduinoDevice() {
+        for (UsbDevice device : usbManager.getDeviceList().values()) {
+            if (device.getVendorId() == 0x2341) {
+                return device;
+            }
+        }
+        return null;
+    }
+
+    private void initArduinoDevice() {
+        if (arduinoDevice != null && arduinoDevice.isOpened()) {
+            return;
+        }
+
+        device = discoverArduinoDevice();
+        if (device != null) {
+            PendingIntent pi = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
+            usbManager.requestPermission(device, pi);
+            Toast.makeText(MainActivity.this, "Arduino detected. Requesting permissions...", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(MainActivity.this, "Arduino is not connected", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public static class ServoCommand {
+
+        final int[] values;
+
+        public ServoCommand(int[] values) {
+            this.values = values;
+        }
+    }
 
 }

@@ -12,6 +12,9 @@ import android.graphics.RectF;
 import android.hardware.Camera;
 import android.view.View;
 
+import rx.subjects.BehaviorSubject;
+import rx.subjects.Subject;
+
 public class FaceDetectorView extends View {
 
     private static final int ARROW_SIZE = 24;
@@ -20,13 +23,13 @@ public class FaceDetectorView extends View {
 
     private Paint paint, markupPaint, dashedPaint;
 
-    private Camera.Face[] faces;
-
     private RectF mainFaceRect;
     private long lastDetected;
 
     private int mDisplayOrientation;
     private int mOrientation;
+
+    private Subject<RectF, RectF> faceStream = BehaviorSubject.create();
 
     public FaceDetectorView(Context context) {
         super(context);
@@ -171,7 +174,6 @@ public class FaceDetectorView extends View {
     }
 
     public void setFaces(Camera.Face[] faces) {
-        this.faces = faces;
         Camera.Face bigFace = getBiggestFace(faces);
         if (bigFace != null) {
             mainFaceRect = new RectF();
@@ -179,9 +181,14 @@ public class FaceDetectorView extends View {
             translateRect(mainFaceRect);
             lastDetected = System.currentTimeMillis();
             invalidate();
+            faceStream.onNext(new RectF(mainFaceRect));
         } else if (System.currentTimeMillis() - lastDetected > 2000) {
             mainFaceRect = null;
             invalidate();
         }
+    }
+
+    public Subject<RectF, RectF> getFaceStream() {
+        return faceStream;
     }
 }
