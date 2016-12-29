@@ -35,6 +35,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
 
+    private int cameraId = 0;
     private Camera mCamera;
     private SurfaceView mView;
     private FaceDetectorView mOverlay;
@@ -53,6 +54,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     private CompositeSubscription subscriptions = new CompositeSubscription();
 
+    private Position position = new Position();
 
     private UsbSerialInterface.UsbReadCallback usbReadCallback = new UsbSerialInterface.UsbReadCallback() {
         @Override
@@ -116,17 +118,42 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         subscriptions.add(mOverlay.getFaceStream().subscribe(new Action1<RectF>() {
             @Override
             public void call(RectF rect) {
-                int x = MathUtils.map(rect.centerX(), 100, 600, 0, 180);
-                int y = MathUtils.map(rect.centerY(), 100, 900, 0, 180);
-                Log.i(TAG, "Face: " + x + " : " + y);
 
-                if (arduinoDevice != null && arduinoDevice.isOpened()) {
-                    arduinoDevice.servo(1, x);
-                    arduinoDevice.servo(2, y);
+                int dx = (int) (rect.centerX() - mView.getHeight() / 2);
+                int dy = (int) (rect.centerY() - mView.getWidth() / 2);
+
+                boolean isDirty = false;
+
+                if (Math.abs(dx) > 20) {
+                    dx = dx / Math.abs(dx);
+                    int x = position.getX() - dx;
+                    position.setX(MathUtils.inRange(x, 5, 175));
+                    isDirty = true;
                 }
+
+                if (Math.abs(dy) > 20) {
+                    dy = dy / Math.abs(dy);
+                    int y = position.getY() - dy;
+                    position.setY(MathUtils.inRange(y, 5, 60));
+                    isDirty = true;
+                }
+
+                if (isDirty) {
+                    sendPosition();
+                    Log.i(TAG, position.toString());
+                }
+
+
             }
         }));
 
+    }
+
+    private void sendPosition() {
+        if (arduinoDevice != null && arduinoDevice.isOpened()) {
+            arduinoDevice.servo(1, position.getX());
+            arduinoDevice.servo(2, position.getY());
+        }
     }
 
     @Override
@@ -179,6 +206,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             Camera.CameraInfo info = new Camera.CameraInfo();
             Camera.getCameraInfo(i, info);
             if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+                cameraId = i;
                 return Camera.open(i);
             }
         }
@@ -220,7 +248,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         mCamera.setParameters(parameters);
         // Now set the display orientation for the camera. Can we do this differently?
         mDisplayRotation = Utils.getDisplayRotation(this);
-        mDisplayOrientation = Utils.getDisplayOrientation(mDisplayRotation, 0);
+        mDisplayOrientation = Utils.getDisplayOrientation(mDisplayRotation, cameraId);
         mCamera.setDisplayOrientation(mDisplayOrientation);
 
         if (mOverlay != null) {
