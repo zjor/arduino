@@ -55,6 +55,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private CompositeSubscription subscriptions = new CompositeSubscription();
 
     private Position position = new Position();
+    private int skipMovingFrames;
 
     private UsbSerialInterface.UsbReadCallback usbReadCallback = new UsbSerialInterface.UsbReadCallback() {
         @Override
@@ -118,20 +119,28 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         subscriptions.add(mOverlay.getFaceStream().subscribe(new Action1<RectF>() {
             @Override
             public void call(RectF rect) {
+                if (skipMovingFrames > 0) {
+                    skipMovingFrames--;
+                    return;
+                }
 
-                int dx = (int) (rect.centerX() - mView.getHeight() / 2);
-                int dy = (int) (rect.centerY() - mView.getWidth() / 2);
+                int dx = -(int) (rect.centerX() - mView.getWidth() / 2);
+                int dy = -(int) (rect.centerY() - mView.getHeight() / 2);
+//                Log.i(TAG, "dx = " + dx + "; dy = " + dy);
+
+                int framesToSkip = 2 - Math.max(MathUtils.map(Math.abs(dx), 0, mView.getWidth(), 0, 3),
+                        MathUtils.map(Math.abs(dy), 0, mView.getHeight(), 0, 3));
 
                 boolean isDirty = false;
 
-                if (Math.abs(dx) > 20) {
+                if (Math.abs(dx) > 60) {
                     dx = dx / Math.abs(dx);
                     int x = position.getX() - dx;
                     position.setX(MathUtils.inRange(x, 5, 175));
                     isDirty = true;
                 }
 
-                if (Math.abs(dy) > 20) {
+                if (Math.abs(dy) > 30) {
                     dy = dy / Math.abs(dy);
                     int y = position.getY() - dy;
                     position.setY(MathUtils.inRange(y, 5, 60));
@@ -139,6 +148,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 }
 
                 if (isDirty) {
+                    skipMovingFrames = framesToSkip;
                     sendPosition();
                     Log.i(TAG, position.toString());
                 }
@@ -146,6 +156,14 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
             }
         }));
+
+    }
+
+    private int getDelta(float center, float size) {
+        float sign = size / 2 - center > 0 ? 1.0f : -1.0f;
+        float d = Math.abs(size / 2 - center);
+        double delta = Math.atan(4.0 * d / size - 5.0) + Math.PI / 2;
+        return (int) delta;
 
     }
 
@@ -313,15 +331,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             Toast.makeText(MainActivity.this, "Arduino detected. Requesting permissions...", Toast.LENGTH_SHORT).show();
         } else {
             Toast.makeText(MainActivity.this, "Arduino is not connected", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    public static class ServoCommand {
-
-        final int[] values;
-
-        public ServoCommand(int[] values) {
-            this.values = values;
         }
     }
 
