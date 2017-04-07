@@ -14,6 +14,8 @@ A5 (SCL) -> LCD SCL
 
 #include <dht11.h>
 
+#include "SlidingWindow.h"
+
 #define MH_Z19_RX 9
 #define MH_Z19_TX 8
 
@@ -22,6 +24,8 @@ A5 (SCL) -> LCD SCL
 SoftwareSerial co2Serial(MH_Z19_RX, MH_Z19_TX);
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 dht11 dht11;
+
+SlidingWindow temperatureAvg(5);
 
 int readCO2();
 void printTemperature(int);
