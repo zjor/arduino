@@ -44,8 +44,8 @@ void setup() {
 }
 
 void loop() {
-  int chk = dht11.read(DHT11_PIN);
-  printTemperature(dht11.temperature);
+  dht11.read(DHT11_PIN);
+  printTemperature((int)temperatureAvg.add(dht11.temperature));
   printHumidity(dht11.humidity);
   printCO2(readCO2());
   delay(3000);
@@ -76,21 +76,21 @@ int readCO2() {
 
 void printTemperature(int t) {
   char buffer[16];
-  sprintf(buffer, "T=%d%cC\x0", t, 223);
+  sprintf(buffer, "T=%d%cC%c", t, 223, '\0');
   lcd.setCursor(0, 0);
   lcd.print(buffer);
 }
 
 void printHumidity(int h) {
   char buffer[16];
-  sprintf(buffer, "H=%d%%\x0", h);
+  sprintf(buffer, "H=%d%%%c", h, '\0');
   lcd.setCursor(8, 0);
   lcd.print(buffer);
 }
 
 void printCO2(int co2) {
   char buffer[16];
-  sprintf(buffer, "CO2=%dppm\x0", co2);
+  sprintf(buffer, "CO2=%dppm%c", co2, '\0');
   lcd.setCursor(0, 1);
   lcd.print(buffer);
 }
