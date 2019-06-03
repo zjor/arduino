@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Meter</title>
+    <style>
+      
+      * { 
+        margin: 0; 
+        padding: 0; 
+        box-sizing: 
+        border-box; 
+      }
+
+      body { 
+        font: 13px Helvetica, Arial; 
+      }
+
+      h1 {
+        margin-top: 16px;
+        margin-bottom: 32px;
+      }
+
+      svg {        
+        border: 1px solid goldenrod;
+      }
+
+      svg text {
+        font-size: 36px;
+      }
+
+      .container {
+        width: 500px;
+        margin: 0 auto;
+        text-align: center;
+      }
+
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Meter</h1>
+      <svg width="400" height="400">
+        <!-- https://www.hongkiat.com/blog/svg-meter-gauge-tutorial/ -->
+<!--         <circle cx="200" cy="200" r="150" stroke-width="60" stroke="#FDE47F" fill="none"/>
+        <circle cx="200" cy="200" r="150" stroke-width="60" stroke="red" fill="none" 
+          stroke-dasharray="100, 200"/>
+ -->
+        <text id="value" x="200" y="200" text-anchor="middle">0</text>
+      </svg>
+    </div>
+
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io()
+      const encoderValue = d3.select("#value")
+
+      socket.on('data', (data) => {
+        encoderValue.text(data)  
+      })
+    </script>
+
+  </body>
+</html>
