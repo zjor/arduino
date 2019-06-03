@@ -33,13 +33,13 @@ void setup() {
   stepper.setMaxSpeed(10000);
   stepper.setAcceleration(2000);
 
-//  Serial.begin(115200);
+  Serial.begin(115200);
 }
 
 void loop() {
   if (lastValue != encoderPosition) {
     lastValue = encoderPosition;
-//    Serial.println(encoderPosition);
+    Serial.println(encoderPosition);
     stepper.moveTo(encoderPosition / 2);
   }
 
