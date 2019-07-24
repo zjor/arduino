@@ -1,4 +1,5 @@
-const app = require('express')()
+const express = require('express')
+const app = express()
 const http = require('http').createServer(app)
 const io = require('socket.io')(http)
 
@@ -18,6 +19,7 @@ parser.on('data', line => {
 
 port.write('ROBOT POWER ON\n')
 
+app.use(express.static('static'))
 
 app.get('/', function(req, res){
  res.sendFile(__dirname + '/index.html')
@@ -30,3 +32,8 @@ io.on('connection', function(socket){
 http.listen(3000, function(){
   console.log('listening on *:3000')
 })
+
+// setInterval(() => {
+//   const value = Math.random() * 100
+//   io.emit('data', value)
+// }, 500)
