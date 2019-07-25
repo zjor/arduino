@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Meter</title>
+    <title>Rotary Encoder Values</title>
     <link rel="stylesheet" href="css/style.css"/>
   </head>
   <body>
     <div class="container">
-      <h1>Meter</h1>
-      <div id="meter" class="gauge-container"></div>
+      <h1>Rotary Encoder Values</h1>
+      <div class="widget-container">
+        <div id="meter" class="gauge-container widget"></div>
+        <div id="graph" class="widget"></div>  
+      </div>
     </div>
 
     <script src="https://d3js.org/d3.v5.min.js"></script>
@@ -16,17 +19,78 @@
     <script>
       const Gauge = window.Gauge;
       const meter = Gauge(document.getElementById("meter"), {
-        max: 100,
+        max: 360,
         dialStartAngle: -90, 
-        dialEndAngle: -90.01,
-        label: (value) => (Math.round(value) + "/" + 100),
+        dialEndAngle: -90.01,        
         value: 0        
       });
+
+      let values = []      
+   
+      // set the dimensions and margins of the graph
+      const margin = { top: 10, right: 30, bottom: 30, left: 60 },
+        width = 500 - margin.left - margin.right,
+        height = 300 - margin.top - margin.bottom;
+      // append the svg object to the body of the page
+      const svg = d3.select("#graph")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+      const xRange = 50
+        
+      const x = d3.scaleLinear()
+        .domain([0, xRange])
+        .range([0, width]);
+
+      const y = d3.scaleLinear()
+        .domain([0, 100])
+        .range([height, 0]);  
+        
+      svg.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x));
+
+      svg.append("g")
+        .call(d3.axisLeft(y));
+                   
+      const makeXGridLines = () => d3.axisBottom(x).ticks(5)
+      const makeYGridLines = () => d3.axisLeft(y).ticks(5)
+
+      svg.append("g")			
+        .attr("class", "grid")
+        .attr("transform", "translate(0," + height + ")")
+        .call(makeXGridLines().tickSize(-height).tickFormat(""))          
+
+      svg.append("g")			
+        .attr("class", "grid")
+        .call(makeYGridLines().tickSize(-width).tickFormat(""))
+
+      const path = svg.append("path")
+        .attr("fill", "none")
+        .attr("class", "line")
+
+      const line = d3.line()
+        .x(function (d, i) { return x(i) })
+        .y(function (d) { return y(d) }) 
+
+
+      const updateGraph = (data) => {
+        path.attr("d", line(data))
+      }
+
       const socket = io()
       socket.on('data', (data) => {
         meter.setValue(data)
-      })
-    </script>
+        values.push(data)
+        values = values.slice(-xRange)
+        updateGraph(values)        
+      })        
+      
+  </script>
 
   </body>
 </html>

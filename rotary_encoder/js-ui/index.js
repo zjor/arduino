@@ -33,7 +33,9 @@ http.listen(3000, function(){
   console.log('listening on *:3000')
 })
 
+// generate test data
 // setInterval(() => {
-//   const value = Math.random() * 100
+//   const now = (new Date().getTime()) / 1000 * Math.PI / 100
+//   const value = (Math.sin(now) + 1) * 360
 //   io.emit('data', value)
 // }, 500)

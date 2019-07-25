@@ -3,42 +3,65 @@
     padding: 0; 
     box-sizing: 
     border-box; 
-  }
+}
 
-  body { 
+body { 
     font: 13px Helvetica, Arial; 
-  }
+}
 
-  h1 {
+h1 {
     margin-top: 16px;
     margin-bottom: 32px;
-  }
+}
 
-  .container {
-    width: 300px;
+.widget-container {
+    display: flex;
+}
+
+.container {
+    width: 840px;
     margin: 0 auto;
     text-align: center;
-  }
+}
 
-  .gauge-container {
+.gauge-container {
     width: 300px;
     height: 300px;
     display: block;
     padding: 10px;    
-  }
-  .gauge-container > .gauge > .dial {
+}
+
+.gauge-container > .gauge > .dial {
     stroke: #eee;
     stroke-width: 5;
     fill: rgba(0,0,0,0);
-  }
-  .gauge-container > .gauge > .value {
-    stroke: rgb(47, 227, 255);
+}
+
+.gauge-container > .gauge > .value {
+    stroke: steelblue;
     stroke-width: 5;
     fill: rgba(0,0,0,0);
-  }
-  .gauge-container > .gauge > .value-text {
-    fill: rgb(47, 227, 255);
+}
+
+.gauge-container > .gauge > .value-text {
+    fill: steelblue;
     font-family: sans-serif;
     font-weight: bold;
     font-size: 1em;
-  } 
+} 
+
+.line {
+    fill: none;
+    stroke: steelblue;
+    stroke-width: 1.5px;
+}
+
+.grid line {
+    stroke: lightgrey;
+    stroke-opacity: 0.7;
+    shape-rendering: crispEdges;
+}
+
+.grid path {
+    stroke-width: 0;
+}
