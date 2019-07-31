@@ -17,12 +17,16 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="js/gauge.js"></script>
     <script>
+      const sensorRange = Math.PI * 2.0
+
       const Gauge = window.Gauge;
       const meter = Gauge(document.getElementById("meter"), {
-        max: 360,
+        min: -sensorRange,
+        max: sensorRange,
         dialStartAngle: -90, 
         dialEndAngle: -90.01,        
-        value: 0        
+        value: 0.0,
+        label: v => (Math.round((180.0 * v / Math.PI) * 10) / 10.0) + "°"
       });
 
       let values = []      
@@ -40,14 +44,14 @@
         .attr("transform",
           "translate(" + margin.left + "," + margin.top + ")");
 
-      const xRange = 50
+      const xRange = width - 1;
         
       const x = d3.scaleLinear()
         .domain([0, xRange])
         .range([0, width]);
 
       const y = d3.scaleLinear()
-        .domain([0, 100])
+        .domain([-sensorRange, sensorRange])
         .range([height, 0]);  
         
       svg.append("g")
@@ -73,21 +77,31 @@
         .attr("fill", "none")
         .attr("class", "line")
 
+      const path2 = svg.append("path")
+        .attr("fill", "none")
+        .attr("class", "line2")
+
       const line = d3.line()
         .x(function (d, i) { return x(i) })
-        .y(function (d) { return y(d) }) 
+        .y(function (d) { return y(d[0]) }) 
+
+      const line2 = d3.line()
+        .x(function (d, i) { return x(i) })
+        .y(function (d) { return y(d[1]) }) 
 
 
       const updateGraph = (data) => {
         path.attr("d", line(data))
+        path2.attr("d", line2(data))
       }
 
       const socket = io()
       socket.on('data', (data) => {
-        meter.setValue(data)
-        values.push(data)
+        let [a, w] = data.split("\t").map(x => parseFloat(x))
+        meter.setValue(a)
+        values.push([a, w])
         values = values.slice(-xRange)
-        updateGraph(values)        
+        updateGraph(values) 
       })        
       
   </script>

@@ -56,6 +56,12 @@ h1 {
     stroke-width: 1.5px;
 }
 
+.line2 {
+    fill: none;
+    stroke: blueviolet;
+    stroke-width: 1.5px;
+}
+
 .grid line {
     stroke: lightgrey;
     stroke-opacity: 0.7;
