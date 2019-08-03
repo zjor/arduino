@@ -45,7 +45,7 @@
           "translate(" + margin.left + "," + margin.top + ")");
 
       const xRange = width - 1;
-        
+
       const x = d3.scaleLinear()
         .domain([0, xRange])
         .range([0, width]);
@@ -53,25 +53,75 @@
       const y = d3.scaleLinear()
         .domain([-sensorRange, sensorRange])
         .range([height, 0]);  
-        
-      svg.append("g")
-        .attr("transform", "translate(0," + height + ")")
-        .call(d3.axisBottom(x));
 
-      svg.append("g")
-        .call(d3.axisLeft(y));
-                   
-      const makeXGridLines = () => d3.axisBottom(x).ticks(5)
-      const makeYGridLines = () => d3.axisLeft(y).ticks(5)
 
-      svg.append("g")			
-        .attr("class", "grid")
-        .attr("transform", "translate(0," + height + ")")
-        .call(makeXGridLines().tickSize(-height).tickFormat(""))          
+      const addAxes = (svg, width, height, x, y) => {        
+        svg.append("g")
+          .attr("transform", "translate(0," + height + ")")
+          .call(d3.axisBottom(x));
 
-      svg.append("g")			
-        .attr("class", "grid")
-        .call(makeYGridLines().tickSize(-width).tickFormat(""))
+        svg.append("g")
+          .call(d3.axisLeft(y));                    
+      }
+
+      const addGridLines = (svg, width, height, x, y) => {
+        const makeXGridLines = () => d3.axisBottom(x).ticks(6)
+        const makeYGridLines = () => d3.axisLeft(y).ticks(6)
+
+        svg.append("g")			
+          .attr("class", "grid")
+          .attr("transform", "translate(0," + height + ")")
+          .call(makeXGridLines().tickSize(-height).tickFormat(""))          
+
+        svg.append("g")			
+          .attr("class", "grid")
+          .call(makeYGridLines().tickSize(-width).tickFormat(""))
+      }
+
+      const addLegend = (svg, width, height, params) => {
+        const legend = svg.append("g")
+          .attr("class", "legend")
+          .attr("x", width - 65)
+          .attr("y", 25)
+          .attr("height", 100)
+          .attr("width", 100)
+
+        legend.append("rect")
+          .attr("x", width - 100)
+          .attr("y", 10)
+          .attr("height", 55)
+          .attr("width", 100)
+          .style("fill", "white")
+          .style("stroke", "lightgrey")
+
+        params.forEach(({ label, color }, ix) => {
+          legend.append("circle")
+            .attr("cx", width - 75)
+            .attr("cy", 25 * (ix + 1))
+            .attr("r", 5)
+            .style("fill", color)
+
+          legend.append("text")
+            .attr("x", width - 65)
+            .attr("y", 25 * (ix + 1))
+            .text(label)
+            .attr("alignment-baseline", "middle")
+          })
+
+      }
+
+      addAxes(svg, width, height, x, y)
+      addGridLines(svg, width, height, x, y)
+
+      const params = [{
+          label: "angle",
+          color: "steelblue"
+        }, {
+          label: "velocity",
+          color: "blueviolet"
+
+        }]        
+      addLegend(svg, width, height, params)
 
       const path = svg.append("path")
         .attr("fill", "none")

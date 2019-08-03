@@ -34,8 +34,9 @@ http.listen(3000, function(){
 })
 
 // generate test data
-// setInterval(() => {
-//   const now = (new Date().getTime()) / 1000 * Math.PI
-//   const value = (Math.sin(now) + 1) * 180
-//   io.emit('data', value)
-// }, 50)
+setInterval(() => {
+  const now = (new Date().getTime()) / 1000 * Math.PI
+  const value = (Math.sin(now)) * Math.PI
+  const value2 = (Math.cos(now)) * Math.PI
+  io.emit('data', `${value}\t${value2}`)
+}, 50)

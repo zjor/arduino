@@ -50,6 +50,10 @@ h1 {
     font-size: 1em;
 } 
 
+.legend {
+    fill: grey;
+}
+
 .line {
     fill: none;
     stroke: steelblue;
