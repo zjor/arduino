@@ -31,9 +31,9 @@ ffft library is provided under its own terms -- see ffft.S for specifics.
 #include <LedControl.h>
 
 /* Display PINs */
-#define CLK     8
+#define CLK     13
 #define CS      9
-#define DIN     10
+#define DIN     11
 
 /* Microphone PIN */
 #define MIC     A0
@@ -246,4 +246,3 @@ ISR(ADC_vect) { // Audio-sampling interrupt
     ADCSRA &= ~_BV(ADIE); // Buffer full, interrupt off
   }
 }
-
