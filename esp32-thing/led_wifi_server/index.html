@@ -1,0 +1,64 @@
+<html>
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<style>
+		html, body {
+			width: 100%;
+			height: 100vh;
+			font-family: verdana;
+		}
+		.container {
+			height: 100vh;
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			justify-content: center;
+		}
+		#toggle {
+			height: 32px;
+		}
+		.led {
+			width: 32px;
+			height: 32px;
+			border-radius: 50%;
+			margin: 2em;
+		}
+		.off {
+			background: red;
+		}
+		.on {
+			background: green;
+		}		
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div>LED Status</div>
+		<div id="led" class="led off">			
+		</div>
+		<button id="toggle">Toggle</button>
+	</div>
+	<script>
+
+		function setLed(status) {
+			if (status) {
+				led.classList.remove('off');
+				led.classList.add('on');
+			} else {
+				led.classList.remove('on');
+				led.classList.add('off');				
+			}
+		}
+
+		const button = document.querySelector("#toggle");
+		const led = document.querySelector("#led");
+		button.addEventListener('click', () => {
+					fetch("/toggle", {'method': 'POST'})
+						.then(res => res.json())
+						.then(json => {
+							setLed(json.led_on)
+						});
+		});
+	</script>
+</body>	
+</html>
