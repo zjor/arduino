@@ -1,0 +1,72 @@
+<html>
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<style>
+		html, body {
+			width: 100%;
+			height: 100vh;
+			font-family: verdana;
+			padding: 0;
+			margin: 0;
+		}
+		.container {
+			height: 100vh;
+			display: flex;
+			flex-direction: column;
+		}
+		.header {
+			width: 100%;
+			padding: 1em 2em 1em;
+			color: white;
+			background: black;
+		}
+		.header .title {
+			font-size: 1.5em;
+			margin-bottom: 0.5em;
+		}		
+		.main {
+			flex-grow: 1;
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			justify-content: center;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="header">
+			<div class="title">ESP32 Thing Plus</div>
+			<div class="subtitle">Adafruit SSD1306 WiFi Server</div>
+		</div>
+		<div class="main">
+			<div>
+				<h3>Write a message</h3>
+				<input type="text" id="input-text">
+				<button id="button-send">Send</button>
+				<div id="response"></div>
+			</div>
+		</div>
+	</div>
+	<script>
+		const button = document.querySelector("#button-send");
+		const text = document.querySelector("#input-text");
+		const response = document.querySelector("#response");
+		button.addEventListener('click', () => {
+					response.innerText = 'Sending...';
+					
+					fetch("/say", {
+						'method': 'POST',
+						'headers': {
+							'Content-Type': 'text/plain'
+						},
+						'body': text.value
+					})
+						.then(res => res.text())
+						.then(text => {
+							response.innerText = text
+						});
+		});
+	</script>
+</body>	
+</html>
