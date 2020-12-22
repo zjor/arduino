@@ -24,8 +24,8 @@ void toggleLed(Request &req, Response &res) {
   res.print(out + (ledStatus == HIGH ? "true" : "false") + "}");
 }
 
-const char* ssid = "<>";
-const char* password = "<>";
+const char* ssid = "UPC4A9DB68";
+const char* password = "5hdvvRbm8bur";
 
 void setup() {
   pinMode(LED_PIN, OUTPUT);

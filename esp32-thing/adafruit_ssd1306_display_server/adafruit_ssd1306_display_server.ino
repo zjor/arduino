@@ -22,8 +22,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 WiFiServer server(80);
 Application app;
 
-const char* ssid = "<>";
-const char* password = "<>";
+const char* ssid = "zulu";
+const char* password = "Try0_0it:)";
 
 void index(Request &req, Response &res) {
   res.set("Content-Type", "text/html");
