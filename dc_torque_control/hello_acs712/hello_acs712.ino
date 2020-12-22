@@ -1,3 +1,10 @@
+/*
+ TODO:
+ - scale readings to amps
+ - try rectandular signal
+ - control amps flowing through coils
+ */
+ 
 #define PWM_PIN 9
 #define DIR_PIN 4
 
