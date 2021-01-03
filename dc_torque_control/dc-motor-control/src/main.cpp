@@ -19,12 +19,13 @@
 Encoder encoder(3, 2);
 Adafruit_INA219 ina219;
 
-float current_buf[3];
-AvgValue current_ma(current_buf, 3);
+#define CURRENT_BUF_SIZE  2
+float current_buf[CURRENT_BUF_SIZE];
+AvgValue current_ma(current_buf, CURRENT_BUF_SIZE);
 float current_avg;
 float u;
 
-PID current_pid(0.5, 0.0, 1e-3, 75.0);
+PID current_pid(0.15, 0.0, 0.7, 350.0);
 
 void log_state();
 
@@ -51,13 +52,14 @@ void run(unsigned long now, unsigned long dt) {
 
   u = current_pid.getControl(current_avg, 1.0 * dt * 1e-3);
 
-  digitalWrite(DIR_PIN, u < 0 ? HIGH : LOW);
-  analogWrite(PWM_PIN, min(abs(u), 255));
+  digitalWrite(DIR_PIN, u > 0 ? HIGH : LOW);
+  // digitalWrite(DIR_PIN, HIGH);
+  analogWrite(PWM_PIN, (int) min(abs(u), 255));
 
   log_state();  
 }
 
-TimedTask run_task(&run, 20);
+TimedTask run_task(&run, 10);
 
 void loop() {
   run_task.loop();
