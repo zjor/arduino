@@ -2,11 +2,12 @@
 #include <Wire.h>
 #include <Adafruit_INA219.h>
 
+#define ENCODER_OPTIMIZE_INTERRUPTS
+#include <Encoder.h>
+
 #include "PID.h"
 #include "TimedTask.h"
 
-#define OUTPUT_A PD3
-#define OUTPUT_B PD2
 
 #define PWM_PIN 9
 #define DIR_PIN 4
@@ -15,17 +16,13 @@
 
 #define PPR 5000
 
-int motor_dir = HIGH;
 float current_ma = .0f;
 int current_pwm = 0;
 float last_current_ma = .0f;
 float current_control = 0.f;
 unsigned long last_ts_millis = 0L;
 
-volatile long encoderValue = 0L;
-volatile long lastEncoded = 0L;
-
-void encoderHandler();
+Encoder encoder(3, 2);
 
 Adafruit_INA219 ina219;
 
@@ -34,9 +31,8 @@ PID current_pid(1e-2, 0.0, 1e-4, 150.0, -MAX_VOLTAGE, MAX_VOLTAGE);
 void log_state() {  
   Serial.print(current_control, 2);
   Serial.print("\t");
-  Serial.print(current_ma, 2);
-  Serial.print("\t");
-  Serial.println(2 * 3.14 * encoderValue / PPR);
+  Serial.println(current_ma, 2);
+  
 }
 
 void set_pwm_frequency() {
@@ -50,41 +46,27 @@ void set_pwm_frequency() {
 void setup() {
   last_ts_millis = millis();
 
-  pinMode(OUTPUT_A, INPUT_PULLUP);
-  pinMode(OUTPUT_B, INPUT_PULLUP);
-
-  // attachInterrupt(digitalPinToInterrupt(OUTPUT_A), encoderHandler, CHANGE);
-  // attachInterrupt(digitalPinToInterrupt(OUTPUT_B), encoderHandler, CHANGE);
-
   pinMode(PWM_PIN, OUTPUT);
   pinMode(DIR_PIN, OUTPUT);
 
   set_pwm_frequency();
-  ina219.begin();
+  ina219.begin();  
   Serial.begin(115200);
 
   pinMode(13, OUTPUT);
 }
 
-int state = HIGH;
-void blink(unsigned long now, unsigned long dt) {
-  digitalWrite(13, state);
-  state  = !state;
+void run(unsigned long now, unsigned long dt) {
+  int value = encoder.read();
+  Serial.println(value);
 }
 
-TimedTask task(&blink, 500);
+TimedTask run_task(&run, 250);
 
 int log_i = 0;
-unsigned long now_millis;
 
 void loop() {
-  task.loop();
-  return ;
-
-  unsigned long now_micros = millis();
-  float ma = ina219.getCurrent_mA();
-  Serial.println(millis() - now_micros);
-  delay(250);
+  run_task.loop();
 
   // now_millis = millis();
 
@@ -110,21 +92,4 @@ void loop() {
   //   log_i = 0;
   // }
   
-}
-
-
-void encoderHandler() {
-  int MSB = (PIND & (1 << OUTPUT_A)) >> OUTPUT_A; //MSB = most significant bit
-  int LSB = (PIND & (1 << OUTPUT_B)) >> OUTPUT_B; //LSB = least significant bit
-  int encoded = (MSB << 1) | LSB; //converting the 2 pin value to single number
-  int sum  = (lastEncoded << 2) | encoded; //adding it to the previous encoded value
-
-  if(sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011) {
-    encoderValue++; //CW
-  }
-  if(sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000) {
-    encoderValue--; //CCW
-  }
-
-  lastEncoded = encoded; //store this value for next time  
 }
