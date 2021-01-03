@@ -7,7 +7,7 @@
 
 #include "PID.h"
 #include "TimedTask.h"
-
+#include "AvgValue.h"
 
 #define PWM_PIN 9
 #define DIR_PIN 4
@@ -16,24 +16,13 @@
 
 #define PPR 5000
 
-float current_ma = .0f;
-int current_pwm = 0;
-float last_current_ma = .0f;
-float current_control = 0.f;
-unsigned long last_ts_millis = 0L;
-
 Encoder encoder(3, 2);
-
 Adafruit_INA219 ina219;
 
-PID current_pid(1e-2, 0.0, 1e-4, 150.0, -MAX_VOLTAGE, MAX_VOLTAGE);
+float current_buf[3];
+AvgValue current_ma(current_buf, 3);
 
-void log_state() {  
-  Serial.print(current_control, 2);
-  Serial.print("\t");
-  Serial.println(current_ma, 2);
-  
-}
+PID current_pid(1e-2, 0.0, 1e-4, 150.0, -MAX_VOLTAGE, MAX_VOLTAGE);
 
 void set_pwm_frequency() {
 //  TCCR1B = TCCR1B & B11111000 | B00000101;    // set timer 1 divisor to  1024 for PWM frequency of    30.64 Hz  
@@ -44,52 +33,28 @@ void set_pwm_frequency() {
 }
 
 void setup() {
-  last_ts_millis = millis();
-
   pinMode(PWM_PIN, OUTPUT);
   pinMode(DIR_PIN, OUTPUT);
 
   set_pwm_frequency();
-  ina219.begin();  
-  Serial.begin(115200);
 
-  pinMode(13, OUTPUT);
+  ina219.begin();
+  Serial.begin(115200);
 }
 
 void run(unsigned long now, unsigned long dt) {
   int value = encoder.read();
+  Serial.print(current_ma.get_avg());
+  Serial.print("\t");
   Serial.println(value);
 }
 
-TimedTask run_task(&run, 250);
+TimedTask run_task(&run, 100);
 
 int log_i = 0;
 
 void loop() {
   run_task.loop();
 
-  // now_millis = millis();
-
-  // current_ma = ina219.getCurrent_mA();
-  // float dt = 1.0 * (now_millis - last_ts_millis) / 1e3;
-  // current_control = current_pid.getControl(current_ma, last_current_ma, dt);
-  // last_current_ma = current_ma;
-  // last_ts_millis = now_millis;
-
-  // current_pwm = (int)(abs(current_control) * 255 / MAX_VOLTAGE);
-  // analogWrite(PWM_PIN, current_pwm);
-
-  // if (current_control > 0) {
-  //   digitalWrite(DIR_PIN, LOW);
-  // } else {
-  //   digitalWrite(DIR_PIN, HIGH);
-  // }
-
-  
-  // log_i++;
-  // if (log_i > 500) {
-  //   log_state();
-  //   log_i = 0;
-  // }
-  
+  current_ma.update(ina219.getCurrent_mA());
 }
