@@ -22,6 +22,7 @@ float theta_u = 0;
 float omega = 0;
 float omega_u = 0;
 Adafruit_INA219 ina219;
+int last_target = 0;
 
 #define CURRENT_BUF_SIZE  2
 float current_buf[CURRENT_BUF_SIZE];
@@ -30,8 +31,8 @@ float current_avg;
 float u;
 
 PID current_pid(0.17, 0.0, 0.75, .0);
-PID velocity_pid(40.0, 1.2, 50.0, .0);
-PID position_pid(35.0, 3.0, 20.0, 1.5 * M_PI);
+PID velocity_pid(35.0, 0.4, 35.0, .0);
+PID position_pid(25.0, 0.7, 50.0, .0);
 
 void log_state();
 
@@ -45,7 +46,7 @@ void set_pwm_frequency() {
 
 void setup() {
   pinMode(PWM_PIN, OUTPUT);
-  pinMode(DIR_PIN, OUTPUT);
+  pinMode(DIR_PIN, OUTPUT);  
 
   set_pwm_frequency();
 
@@ -73,6 +74,13 @@ void run(unsigned long now, unsigned long dt_millis) {
   digitalWrite(DIR_PIN, u > 0 ? HIGH : LOW);
   analogWrite(PWM_PIN, (int) min(abs(u), 255));
 
+  int target = analogRead(A0);
+  if (last_target != target) {
+    position_pid.setTarget(2.0 * M_PI * target / 1023);
+    last_target = target;
+  }
+
+
   // log_state();  
 }
 
@@ -80,7 +88,7 @@ TimedTask run_task(&run, 1);
 
 void loop() {
   run_task.loop();
-  current_ma.update(ina219.getCurrent_mA());  
+  current_ma.update(ina219.getCurrent_mA());
 }
 
 int log_i = 0;
