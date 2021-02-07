@@ -30,7 +30,7 @@ AvgValue current_ma(current_buf, CURRENT_BUF_SIZE);
 float current_avg;
 float u;
 
-PID current_pid(0.17, 0.0, 0.75, .0);
+PID current_pid(0.2, 0.0, 0.5, .0);
 PID velocity_pid(35.0, 0.4, 35.0, .0);
 PID position_pid(25.0, 0.7, 50.0, .0);
 
@@ -51,7 +51,7 @@ void setup() {
   set_pwm_frequency();
 
   ina219.begin();
-  Serial.begin(115200);
+  // Serial.begin(115200);
 }
 
 void run(unsigned long now, unsigned long dt_millis) {
