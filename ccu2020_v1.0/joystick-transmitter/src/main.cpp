@@ -60,6 +60,8 @@ void setup() {
 
 }
 
+const char message[] = "Hello world";
+
 void loop() {
   packet[0] = digitalRead(KEY_DOWN);
   packet[1] = analogRead(JOYSTICK_X); 
@@ -77,8 +79,8 @@ void loop() {
   }
   Serial.println();
 
-  delay(50);
+  delay(500);
 
-  //TODO: send only if state has changed
-  radio.write(packet, sizeof(packet));
+  // radio.write(packet, sizeof(packet));
+  radio.write(&message, sizeof(message));
 }
