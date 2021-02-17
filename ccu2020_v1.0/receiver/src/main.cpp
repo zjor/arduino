@@ -3,6 +3,8 @@
 #include <nRF24L01.h>
 #include <RF24.h>
 
+#include <JoystickShieldRF.h>
+
 #define CE_PIN  2
 #define CSN_PIN 9
 
@@ -19,6 +21,8 @@ void setup() {
   radio.setPALevel(RF24_PA_MIN);
   
   radio.startListening();
+
+  Serial.println(shield);
 
   
 }
