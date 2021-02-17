@@ -31,20 +31,7 @@ const byte address[6] = "00001";
 RF24 radio(CE_PIN, CSN_PIN);
 Packet packet;
 
-void log_packet(Packet p) {
-  Serial.print(*(uint32_t *) &packet);
-  Serial.print(": ");
-  Serial.print(p.a);Serial.print(' ');
-  Serial.print(p.b);Serial.print(' ');
-  Serial.print(p.c);Serial.print(' ');
-  Serial.print(p.d);Serial.print(' ');
-  Serial.print(p.e);Serial.print(' ');
-  Serial.print(p.f);Serial.print(' ');
-  Serial.print(p.down);Serial.print(' ');
-  Serial.print(p.x);Serial.print(' ');
-  Serial.println(p.y);
-}
-
+void log_packet(Packet);
 
 void setup() {
 
@@ -81,4 +68,18 @@ void loop() {
   delay(50);
 
   radio.write(&packet, sizeof(packet));
+}
+
+void log_packet(Packet p) {
+  Serial.print(*(uint32_t *) &packet);
+  Serial.print(": ");
+  Serial.print(p.a);Serial.print(' ');
+  Serial.print(p.b);Serial.print(' ');
+  Serial.print(p.c);Serial.print(' ');
+  Serial.print(p.d);Serial.print(' ');
+  Serial.print(p.e);Serial.print(' ');
+  Serial.print(p.f);Serial.print(' ');
+  Serial.print(p.down);Serial.print(' ');
+  Serial.print(p.x);Serial.print(' ');
+  Serial.println(p.y);
 }
