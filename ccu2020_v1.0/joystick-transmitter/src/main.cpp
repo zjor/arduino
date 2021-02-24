@@ -14,8 +14,8 @@
 
 #define CE_PIN   9
 #define CSN_PIN 10
-#define JOYSTICK_X   A1
-#define JOYSTICK_Y   A0
+#define JOYSTICK_X   A0
+#define JOYSTICK_Y   A1
 #define KEY_A 2
 #define KEY_B 3
 #define KEY_C 4
