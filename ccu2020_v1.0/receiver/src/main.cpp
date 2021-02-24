@@ -71,10 +71,10 @@ void loop() {
 }
 
 void driveMotors(Packet p) {
-  int vx = p.x - 512;
-  int vy = p.y - 512;
-  int vl = vy + vx;
-  int vr = vy - vx;
+  float vx = p.x - 512;
+  float vy = p.y - 512;
+  float vl = (1.0 + vx / 512 / 2) * vy;
+  float vr = (1.0 - vx / 512 / 2) * vy;
 
   int dir = vl > 0;
   digitalWrite(AIN1, !dir);
