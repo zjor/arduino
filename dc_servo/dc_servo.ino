@@ -1,6 +1,10 @@
 /**
  * JGA25-370 DC12V280RPM
  * Gear ration: 21.3
+ * TODO:
+ * - change PWM frequency
+ * - decrease reponse time
+ * - check PID set target
  */
 #define ENCODER_OPTIMIZE_INTERRUPTS
 #include <Encoder.h>
