@@ -5,6 +5,9 @@
  * - change PWM frequency
  * - decrease reponse time
  * - check PID set target
+ * 
+ * PWM frequency configuration
+ * - https://playground.arduino.cc/Main/TimerPWMCheatsheet/
  */
 #define ENCODER_OPTIMIZE_INTERRUPTS
 #include <Encoder.h>
@@ -74,9 +77,12 @@ void run(unsigned long now, unsigned long dt_millis) {
   position_pid.setTarget(pos_target);
 }
 
-TimedTask run_task(&run, 20);
+TimedTask run_task(&run, 5);
 
-void setup() {   
+void setup() {
+  // set PWM frequency on pins 2, 3, 5 to 31250 Hz
+  TCCR3B = TCCR3B & 0b11111000 | 0x01;  
+  
   pinMode(EN1_PIN, OUTPUT);
   pinMode(EN2_PIN, OUTPUT);
   pinMode(PWM_PIN, OUTPUT);
