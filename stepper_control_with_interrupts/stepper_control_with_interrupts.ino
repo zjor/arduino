@@ -70,6 +70,7 @@ void loop() {
   if (velocity < -maxVelocity) {
     accel = accelStep;
   }
+  Serial.println(ticksPerPulse);
 }
 
 /**

@@ -7,6 +7,7 @@ This repo is a collection of my Arduino-based projects
 - [Music Visualizer](https://github.com/zjor/arduino/tree/master/music-visualizer)
 - [The Game of Life](https://github.com/zjor/arduino/tree/master/the_game_of_life)
 - [The Snake Game](https://github.com/zjor/arduino/tree/master/snake)
+- [Controlling two arduino slaves over SPI](/spi-two-arduino-slaves)
 
 ## Plans
 
