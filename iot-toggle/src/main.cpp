@@ -4,6 +4,7 @@
 
 #include "credentials.h"
 #include "bot_client.h"
+#include "hue_led.h"
 
 #define R_PIN 14
 #define G_PIN 15
@@ -37,6 +38,8 @@ void (*handlers[])() = {
 
 // end of FSM definition
 
+HueLed led(R_PIN, G_PIN, B_PIN);
+
 const char *MQTT_TOPIC = "toggle/101";
 
 BotClient bot(BOT_LOGIN, BOT_PASSWORD);
@@ -45,22 +48,14 @@ unsigned long toggle_elapsed_millis;
 
 void update_led(int toggle_state) {
   if (toggle_state == LOW /* idle */) {
-    digitalWrite(R_PIN, HIGH);
-    digitalWrite(G_PIN, LOW);
+    led.set_rgb(0, 255, 0);
   } else {
-    digitalWrite(R_PIN, LOW);
-    digitalWrite(G_PIN, HIGH);
+    led.set_rgb(255, 0, 0);  
   }
 }
 
 void setup() {
-  pinMode(R_PIN, OUTPUT);
-  pinMode(G_PIN, OUTPUT);
-  pinMode(B_PIN, OUTPUT);
-  
-  digitalWrite(R_PIN, HIGH);
-  digitalWrite(G_PIN, HIGH);
-  digitalWrite(B_PIN, HIGH);
+  led.init();
 
   pinMode(SWITCH_A_PIN, INPUT_PULLUP);
   pinMode(SWITCH_B_PIN, INPUT_PULLUP);
@@ -96,12 +91,18 @@ void on_busy(unsigned long elapsed_millis) {
 }
 
 void handle_connecting_state() {
+  static int _i = 0;
+  static int hue = 0; 
   wl_status_t wifi_status = WiFi.status();  
   if (wifi_status == WL_CONNECTED) {
     device_status = ONLINE;
   } else {
-    Serial.print(".");
-    // hue rotation
+    if (_i % 5 == 0) {
+      Serial.print(".");
+    }
+    _i++;
+    led.set_hsv(hue, 255, 255);
+    hue = (++hue) % 255;    
   }
 }
 
