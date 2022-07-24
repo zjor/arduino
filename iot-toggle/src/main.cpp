@@ -72,11 +72,24 @@ void loop() {
   delay(10);
 }
 
+void format_time(unsigned long t, char *buf) {
+	long ms = t % 1000;
+	t = t / 1000;
+	long seconds = t % 60;
+	t = t / 60;
+	long mins = t % 60;
+	long hours = t / 60;
+  sprintf(buf, "%02ld:%02ld:%02ld.%03ld", hours, mins, seconds, ms);
+}
+
 void on_idle(unsigned long elapsed_millis) {
   update_led(LOW);
 
   char buf[64];
-  sprintf(buf, "[idle] busy time: %ldms", elapsed_millis);
+  char time_buf[16];
+  format_time(elapsed_millis, time_buf);
+
+  sprintf(buf, "[idle] busy time: %s (%ldms)", time_buf, elapsed_millis);
   bot.send_message(MQTT_TOPIC, buf);
   Serial.println(buf);
 }
@@ -85,7 +98,10 @@ void on_busy(unsigned long elapsed_millis) {
   update_led(HIGH);
 
   char buf[64];
-  sprintf(buf, "[busy] idle time: %ldms", elapsed_millis);
+  char time_buf[16];
+  format_time(elapsed_millis, time_buf);
+
+  sprintf(buf, "[busy] idle time: %s (%ldms)", time_buf, elapsed_millis);
   bot.send_message(MQTT_TOPIC, buf);
   Serial.println(buf);
 }
@@ -93,7 +109,7 @@ void on_busy(unsigned long elapsed_millis) {
 void handle_connecting_state() {
   static int _i = 0;
   static int hue = 0; 
-  wl_status_t wifi_status = WiFi.status();  
+  wl_status_t wifi_status = WiFi.status();
   if (wifi_status == WL_CONNECTED) {
     device_status = ONLINE;
   } else {
@@ -126,6 +142,12 @@ void handle_online_state() {
 }
 
 void handle_idle_state() {
+  wl_status_t wifi_status = WiFi.status();
+  if (wifi_status != WL_CONNECTED) {
+    device_status = CONNECTING;
+    return;
+  }
+
   int toggle_state = digitalRead(SWITCH_A_PIN);
   if (toggle_state == LOW) {
     // do nothing we are idle
@@ -138,6 +160,12 @@ void handle_idle_state() {
 }
 
 void handle_busy_state() {
+  wl_status_t wifi_status = WiFi.status();
+  if (wifi_status != WL_CONNECTED) {
+    device_status = CONNECTING;
+    return;
+  }
+
   int toggle_state = digitalRead(SWITCH_A_PIN);
   if (toggle_state == LOW) {
     unsigned long now = millis();
