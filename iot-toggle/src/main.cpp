@@ -19,21 +19,24 @@ typedef enum {
   CONNECTING          = 0,
   ONLINE              = 1,
   TOGGLE_IDLE         = 2,
-  TOGGLE_BUSY         = 3
+  TOGGLE_BUSY         = 3,
+  SMART_CONFIG        = 4
 } device_status_t;
 
-device_status_t device_status = CONNECTING;
+device_status_t device_status = SMART_CONFIG;
 
 void handle_connecting_state();
 void handle_online_state();
 void handle_idle_state();
 void handle_busy_state();
+void handle_smart_config_state();
 
 void (*handlers[])() = {
   handle_connecting_state,
   handle_online_state,
   handle_idle_state,
-  handle_busy_state
+  handle_busy_state,
+  handle_smart_config_state
 };
 
 // end of FSM definition
@@ -62,8 +65,11 @@ void setup() {
   
   Serial.begin(115200);
 
-  Serial.println("Connecting to WiFi...");
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  // Serial.println("Connecting to WiFi...");
+  // WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.println("Starting SmartConfig");
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.beginSmartConfig();
 }
 
 void loop() {
@@ -106,19 +112,30 @@ void on_busy(unsigned long elapsed_millis) {
   Serial.println(buf);
 }
 
+void hue_rotate() {
+  static unsigned int hue = 0;
+  led.set_hsv(hue, 255, 255);
+  hue = (++hue) % 255;
+}
+
+void print_dot_progress() {
+  static int i = 0;
+  if (i % 10 == 0) {
+    Serial.print(".");
+  }
+  if (i % 1000 == 0) {
+    Serial.println();
+  }
+  i++;
+}
+
 void handle_connecting_state() {
-  static int _i = 0;
-  static int hue = 0; 
   wl_status_t wifi_status = WiFi.status();
   if (wifi_status == WL_CONNECTED) {
     device_status = ONLINE;
   } else {
-    if (_i % 5 == 0) {
-      Serial.print(".");
-    }
-    _i++;
-    led.set_hsv(hue, 255, 255);
-    hue = (++hue) % 255;    
+    print_dot_progress();
+    hue_rotate();
   }
 }
 
@@ -175,4 +192,15 @@ void handle_busy_state() {
   } else {
     // do nothing we are busy
   }
+}
+
+void handle_smart_config_state() {
+  if (!WiFi.smartConfigDone()) {
+    print_dot_progress();
+    hue_rotate();
+  } else {
+    Serial.println("SmartConfig received");
+    device_status = CONNECTING;
+  }
+
 }
