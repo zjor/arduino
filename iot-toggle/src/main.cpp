@@ -193,6 +193,12 @@ void hue_rotate() {
   hue = (hue + 1) % 255;
 }
 
+void blink_blue() {
+  static unsigned int i = 0;
+  i++;
+  led.set_rgb(0, 0, ((i / 20) % 2 == 0) ? 255 : 0);
+}
+
 void print_dot_progress() {
   static int i = 0;
   if (i % 10 == 0) {
@@ -264,7 +270,7 @@ void handle_busy_state() {
 void handle_smart_config_state() {
   if (!WiFi.smartConfigDone()) {    
     print_dot_progress();
-    hue_rotate();
+    blink_blue();
   } else {
     Serial.println("SmartConfig is done. Connecting...");
     while (WiFi.status() != WL_CONNECTED) {
