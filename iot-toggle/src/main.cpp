@@ -1,10 +1,12 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <EEPROM.h>
 
 #include "credentials.h"
 #include "bot_client.h"
 #include "hue_led.h"
+#include "credentials_storage.h"
 
 #define R_PIN 14
 #define G_PIN 15
@@ -16,6 +18,7 @@
 // FSM definition
 
 typedef enum {
+  STARTED             = -1,
   CONNECTING          = 0,
   ONLINE              = 1,
   TOGGLE_IDLE         = 2,
@@ -23,13 +26,23 @@ typedef enum {
   SMART_CONFIG        = 4
 } device_status_t;
 
-device_status_t device_status = SMART_CONFIG;
+device_status_t device_status = STARTED;
 
+void set_status(device_status_t new_status);
+
+/* status handlers */
 void handle_connecting_state();
 void handle_online_state();
 void handle_idle_state();
 void handle_busy_state();
 void handle_smart_config_state();
+
+/* transition handlers */
+void on_connecting();
+void on_online();
+void on_idle();
+void on_busy();
+void on_smart_config();
 
 void (*handlers[])() = {
   handle_connecting_state,
@@ -47,7 +60,8 @@ const char *MQTT_TOPIC = "toggle/101";
 
 BotClient bot(BOT_LOGIN, BOT_PASSWORD);
 
-unsigned long toggle_elapsed_millis;
+unsigned long now_millis = 0;
+unsigned long toggle_elapsed_millis = 0;
 
 void update_led(int toggle_state) {
   if (toggle_state == LOW /* idle */) {
@@ -65,17 +79,37 @@ void setup() {
   
   Serial.begin(115200);
 
-  // Serial.println("Connecting to WiFi...");
-  // WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  Serial.println("Starting SmartConfig");
-  WiFi.mode(WIFI_AP_STA);
-  WiFi.beginSmartConfig();
+  set_status(has_credentials() ? CONNECTING : SMART_CONFIG);
+
+  now_millis = millis();
 }
 
 void loop() {
-  (*handlers[device_status])();
+  now_millis = millis();
+  if (device_status != -1) {
+    (*handlers[device_status])();
+  }
 
   delay(10);
+}
+
+void set_status(device_status_t new_status) {
+  switch (new_status) {
+    case STARTED:
+      break;
+    case CONNECTING:
+      on_connecting(); break;
+    case ONLINE:
+      on_online(); break;
+      break;
+    case TOGGLE_IDLE:
+      on_idle(); break;
+    case TOGGLE_BUSY:
+      on_busy(); break;
+    case SMART_CONFIG:
+      on_smart_config();
+  }
+  device_status = new_status;
 }
 
 void format_time(unsigned long t, char *buf) {
@@ -88,7 +122,39 @@ void format_time(unsigned long t, char *buf) {
   sprintf(buf, "%02ld:%02ld:%02ld.%03ld", hours, mins, seconds, ms);
 }
 
-void on_idle(unsigned long elapsed_millis) {
+void on_connecting() {
+  char ssid[32], password[32];
+  load_credentials(ssid, password);
+
+  Serial.println("Connecting to WiFi with credentials:");
+  Serial.printf("  SSID: %s\n", ssid);
+  Serial.printf("  Password: %s\n", password);
+
+  WiFi.begin(ssid, password);
+}
+
+void on_smart_config() {
+  Serial.println("Starting SmartConfig");
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.beginSmartConfig();
+}
+
+void on_online() {
+  Serial.println("\nConnected!");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+
+  bot.send_message(MQTT_TOPIC, "online");
+
+  int toggle_state = digitalRead(SWITCH_A_PIN);
+  toggle_elapsed_millis = now_millis;
+
+  set_status(toggle_state == LOW ? TOGGLE_IDLE : TOGGLE_BUSY);
+}
+
+void on_idle() {  
+  unsigned long elapsed_millis = now_millis - toggle_elapsed_millis;
+  toggle_elapsed_millis = now_millis;
   update_led(LOW);
 
   char buf[64];
@@ -100,7 +166,10 @@ void on_idle(unsigned long elapsed_millis) {
   Serial.println(buf);
 }
 
-void on_busy(unsigned long elapsed_millis) {
+void on_busy() {
+  unsigned long elapsed_millis = now_millis - toggle_elapsed_millis;
+  toggle_elapsed_millis = now_millis;
+
   update_led(HIGH);
 
   char buf[64];
@@ -115,7 +184,7 @@ void on_busy(unsigned long elapsed_millis) {
 void hue_rotate() {
   static unsigned int hue = 0;
   led.set_hsv(hue, 255, 255);
-  hue = (++hue) % 255;
+  hue = (hue + 1) % 255;
 }
 
 void print_dot_progress() {
@@ -132,7 +201,7 @@ void print_dot_progress() {
 void handle_connecting_state() {
   wl_status_t wifi_status = WiFi.status();
   if (wifi_status == WL_CONNECTED) {
-    device_status = ONLINE;
+    set_status(ONLINE);
   } else {
     print_dot_progress();
     hue_rotate();
@@ -140,28 +209,13 @@ void handle_connecting_state() {
 }
 
 void handle_online_state() {
-  Serial.println("\nConnected!");
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
-
-  bot.send_message(MQTT_TOPIC, "online");
-
-  int toggle_state = digitalRead(SWITCH_A_PIN);
-  if (toggle_state == LOW) {
-    on_idle(0L);
-    device_status = TOGGLE_IDLE;    
-  } else {
-    on_busy(0L);
-    device_status = TOGGLE_BUSY;    
-  }
-
-  toggle_elapsed_millis = millis();
+  // we shouldn't be here
 }
 
 void handle_idle_state() {
   wl_status_t wifi_status = WiFi.status();
   if (wifi_status != WL_CONNECTED) {
-    device_status = CONNECTING;
+    set_status(CONNECTING);
     return;
   }
 
@@ -169,38 +223,39 @@ void handle_idle_state() {
   if (toggle_state == LOW) {
     // do nothing we are idle
   } else {
-    unsigned long now = millis();
-    on_busy(now - toggle_elapsed_millis);
-    device_status = TOGGLE_BUSY;
-    toggle_elapsed_millis = now;
+    set_status(TOGGLE_BUSY);
   }
 }
 
 void handle_busy_state() {
   wl_status_t wifi_status = WiFi.status();
   if (wifi_status != WL_CONNECTED) {
-    device_status = CONNECTING;
+    set_status(CONNECTING);
     return;
   }
 
   int toggle_state = digitalRead(SWITCH_A_PIN);
   if (toggle_state == LOW) {
-    unsigned long now = millis();
-    on_idle(now - toggle_elapsed_millis);
-    device_status = TOGGLE_IDLE;
-    toggle_elapsed_millis = now;
+    set_status(TOGGLE_IDLE);
   } else {
     // do nothing we are busy
   }
 }
 
 void handle_smart_config_state() {
-  if (!WiFi.smartConfigDone()) {
+  if (!WiFi.smartConfigDone()) {    
     print_dot_progress();
     hue_rotate();
-  } else {
-    Serial.println("SmartConfig received");
-    device_status = CONNECTING;
+  } else {    
+    char *ssid = strdup(WiFi.SSID().c_str());
+    char *password = strdup(WiFi.psk().c_str());
+
+    Serial.println("Credentials received via SmartConfig:");
+    Serial.printf("  SSID: %s\n", ssid);
+    Serial.printf("  Password: %s\n", password);
+
+    save_credentials(ssid, password);
+    set_status(CONNECTING);
   }
 
 }
