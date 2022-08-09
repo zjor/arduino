@@ -12,7 +12,10 @@
 #define G_PIN 15
 #define B_PIN 27
 
+// busy/idle toggle
 #define SWITCH_A_PIN  12
+
+// SmartConfig toggle
 #define SWITCH_B_PIN  13
 
 // FSM definition
@@ -72,6 +75,7 @@ void update_led(int toggle_state) {
 }
 
 void setup() {
+  EEPROM.begin(EEPROM_SIZE);
   led.init();
 
   pinMode(SWITCH_A_PIN, INPUT_PULLUP);
@@ -86,7 +90,7 @@ void setup() {
 
 void loop() {
   now_millis = millis();
-  if (device_status != -1) {
+  if (device_status != STARTED) {
     (*handlers[device_status])();
   }
 
@@ -94,22 +98,22 @@ void loop() {
 }
 
 void set_status(device_status_t new_status) {
+  Serial.printf("Status transition: %d -> %d\n", device_status, new_status);
+  device_status = new_status;
   switch (new_status) {
     case STARTED:
       break;
     case CONNECTING:
       on_connecting(); break;
     case ONLINE:
-      on_online(); break;
-      break;
+      on_online(); break;      
     case TOGGLE_IDLE:
       on_idle(); break;
     case TOGGLE_BUSY:
       on_busy(); break;
     case SMART_CONFIG:
-      on_smart_config();
+      on_smart_config(); break;
   }
-  device_status = new_status;
 }
 
 void format_time(unsigned long t, char *buf) {
@@ -134,6 +138,8 @@ void on_connecting() {
 }
 
 void on_smart_config() {
+  erase_credentials();
+
   Serial.println("Starting SmartConfig");
   WiFi.mode(WIFI_AP_STA);
   WiFi.beginSmartConfig();
@@ -206,6 +212,11 @@ void handle_connecting_state() {
     print_dot_progress();
     hue_rotate();
   }
+
+  if (digitalRead(SWITCH_B_PIN) == LOW) {
+    set_status(SMART_CONFIG);
+  }
+
 }
 
 void handle_online_state() {
@@ -217,6 +228,10 @@ void handle_idle_state() {
   if (wifi_status != WL_CONNECTED) {
     set_status(CONNECTING);
     return;
+  }
+
+  if (digitalRead(SWITCH_B_PIN) == LOW) {
+    set_status(SMART_CONFIG);
   }
 
   int toggle_state = digitalRead(SWITCH_A_PIN);
@@ -234,6 +249,10 @@ void handle_busy_state() {
     return;
   }
 
+  if (digitalRead(SWITCH_B_PIN) == LOW) {
+    set_status(SMART_CONFIG);
+  }
+
   int toggle_state = digitalRead(SWITCH_A_PIN);
   if (toggle_state == LOW) {
     set_status(TOGGLE_IDLE);
@@ -246,16 +265,24 @@ void handle_smart_config_state() {
   if (!WiFi.smartConfigDone()) {    
     print_dot_progress();
     hue_rotate();
-  } else {    
+  } else {
+    Serial.println("SmartConfig is done. Connecting...");
+    while (WiFi.status() != WL_CONNECTED) {
+      print_dot_progress();
+      hue_rotate();
+      delay(10);
+      // TODO: check smartConfig button, if active -> go to smartConfig
+    }
+
     char *ssid = strdup(WiFi.SSID().c_str());
     char *password = strdup(WiFi.psk().c_str());
 
-    Serial.println("Credentials received via SmartConfig:");
+    Serial.println("\nStoring credentials received via SmartConfig:");
     Serial.printf("  SSID: %s\n", ssid);
     Serial.printf("  Password: %s\n", password);
 
     save_credentials(ssid, password);
-    set_status(CONNECTING);
+    set_status(ONLINE);
   }
 
 }
