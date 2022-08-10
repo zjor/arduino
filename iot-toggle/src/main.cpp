@@ -98,8 +98,6 @@ void loop() {
 }
 
 void set_status(device_status_t new_status) {
-  Serial.printf("Status transition: %d -> %d\n", device_status, new_status);
-  device_status = new_status;
   switch (new_status) {
     case STARTED:
       break;
@@ -114,6 +112,8 @@ void set_status(device_status_t new_status) {
     case SMART_CONFIG:
       on_smart_config(); break;
   }
+  Serial.printf("Status transition: %d -> %d\n", device_status, new_status);
+  device_status = new_status;
 }
 
 void format_time(unsigned long t, char *buf) {
@@ -151,11 +151,6 @@ void on_online() {
   Serial.println(WiFi.localIP());
 
   bot.send_message(MQTT_TOPIC, "online");
-
-  int toggle_state = digitalRead(SWITCH_A_PIN);
-  toggle_elapsed_millis = now_millis;
-
-  set_status(toggle_state == LOW ? TOGGLE_IDLE : TOGGLE_BUSY);
 }
 
 void on_idle() {  
@@ -196,7 +191,7 @@ void hue_rotate() {
 void blink_blue() {
   static unsigned int i = 0;
   i++;
-  led.set_rgb(0, 0, ((i / 20) % 2 == 0) ? 255 : 0);
+  led.set_rgb(0, 0, ((i / 30) % 2 == 0) ? 255 : 0);
 }
 
 void print_dot_progress() {
@@ -226,7 +221,10 @@ void handle_connecting_state() {
 }
 
 void handle_online_state() {
-  // we shouldn't be here
+  int toggle_state = digitalRead(SWITCH_A_PIN);
+  toggle_elapsed_millis = now_millis;
+
+  set_status(toggle_state == LOW ? TOGGLE_IDLE : TOGGLE_BUSY);
 }
 
 void handle_idle_state() {
