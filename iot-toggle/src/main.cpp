@@ -13,10 +13,10 @@
 #define B_PIN 27
 
 // busy/idle toggle
-#define SWITCH_A_PIN  12
+#define SWITCH_A_PIN  32
 
 // SmartConfig toggle
-#define SWITCH_B_PIN  13
+#define SWITCH_B_PIN  33
 
 // FSM definition
 
