@@ -12,13 +12,33 @@ Application app;
 
 uint8_t r = 0, g = 0, b = 0;
 
-void index(Request &req, Response &res) { res.print("Hello Wolrd!"); }
+void cors_options(Request &req, Response &res) {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Headers", "*");
+  res.set("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS");
+  
+  res.sendStatus(204);
+}
+
+void index(Request &req, Response &res) { 
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Headers", "*");
+  res.set("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS");
+
+  res.print("Hello World!");
+}
 
 void getRGBStatusHandler(Request &req, Response &res) {
   DynamicJsonDocument json(1024);
   json["r"] = r;
   json["g"] = g;
   json["b"] = b;
+
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Headers", "*");
+  res.set("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS");
+  res.set("Content-Type", "application/json");
+
   res.print(json.as<String>());
 }
 
@@ -31,6 +51,12 @@ void postRGBStatusHandler(Request &req, Response &res) {
   json["r"] = r;
   json["g"] = g;
   json["b"] = b; // convert values to int
+
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Headers", "*");
+  res.set("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS");
+  res.set("Content-Type", "application/json");
+
   res.print(json.as<String>());
 
   neopixelWrite(RGB_BUILTIN, r, g, b);
@@ -86,6 +112,7 @@ void setup() {
   bleProvisioning.set_on_credentials_ready_callback(&onCredentialsReady);
   bleProvisioning.init("ESP32 Thing Plus-C");
 
+  app.options(&cors_options);
   app.get("/", &index);
   app.get("/api/rgb", &getRGBStatusHandler);
   app.post("/api/rgb", &postRGBStatusHandler);
