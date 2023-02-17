@@ -3,6 +3,7 @@
 #include <WiFi.h>
 #include <aWOT.h>
 
+#include "StaticFiles.h"
 #include "provisioning/BLEProvisioning.h"
 
 BLEProvisioning bleProvisioning;
@@ -18,14 +19,6 @@ void cors_options(Request &req, Response &res) {
   res.set("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS");
   
   res.sendStatus(204);
-}
-
-void index(Request &req, Response &res) { 
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Headers", "*");
-  res.set("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS");
-
-  res.print("Hello World!");
 }
 
 void getRGBStatusHandler(Request &req, Response &res) {
@@ -112,8 +105,8 @@ void setup() {
   bleProvisioning.set_on_credentials_ready_callback(&onCredentialsReady);
   bleProvisioning.init("ESP32 Thing Plus-C");
 
-  app.options(&cors_options);
-  app.get("/", &index);
+  app.use(staticFiles());
+  app.options(&cors_options);  
   app.get("/api/rgb", &getRGBStatusHandler);
   app.post("/api/rgb", &postRGBStatusHandler);
 
