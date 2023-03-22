@@ -58,13 +58,13 @@ void postRGBStatusHandler(Request &req, Response &res) {
 void wifi_event_handler(arduino_event_t *event) {  
   switch (event->event_id) {
   case ARDUINO_EVENT_WIFI_STA_CONNECTED:
-    bleProvisioning.set_wifi_status("connected");
+    bleProvisioning.set_wifi_status(STATUS_CONNECTED);
     break;
   case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
-    bleProvisioning.set_wifi_status("disconnected");
+    bleProvisioning.set_wifi_status(STATUS_DISCONNECTED);
     break;
   case ARDUINO_EVENT_WIFI_STA_GOT_IP:
-    bleProvisioning.set_wifi_status("got IP");
+    bleProvisioning.set_wifi_status(STATUS_GOT_IP);
     break;
   }
 }
@@ -74,6 +74,7 @@ void connect_to_wifi(void *param) {
   WiFi.onEvent(wifi_event_handler, ARDUINO_EVENT_MAX);
   WiFi.begin(bleProvisioning.wifi_ssid.c_str(),
              bleProvisioning.wifi_password.c_str());
+  bleProvisioning.set_wifi_status(STATUS_CONNECTING);
   Serial.println("\nConnecting");
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -84,9 +85,7 @@ void connect_to_wifi(void *param) {
   Serial.println("\nConnected to the WiFi network");
   Serial.printf("\nGo to: http://%s\n", WiFi.localIP().toString().c_str());
 
-  std::string ip_value = "IP: ";
-  ip_value += WiFi.localIP().toString().c_str();
-  bleProvisioning.set_ip_address(ip_value.c_str());
+  bleProvisioning.set_ip_address(WiFi.localIP().toString().c_str());
 
   server.begin();
 

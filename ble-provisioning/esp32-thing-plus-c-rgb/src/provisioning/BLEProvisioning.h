@@ -13,6 +13,12 @@
 #define BP_WIFI_STATUS_CHAR_UUID "961b1ff7-4259-4058-85cc-3435c85cd704"
 #define BP_IP_CHAR_UUID          "489ab6fc-334b-4a0f-b11f-7dff297aebb4"
 
+#define STATUS_READY          "READY"
+#define STATUS_CONNECTING     "CONNECTING"
+#define STATUS_CONNECTED      "CONNECTED"
+#define STATUS_DISCONNECTED   "DISCONNECTED"
+#define STATUS_GOT_IP         "GOT_IP"
+
 typedef void (* t_void_func)();
 
 class BLEProvisioning: public BLECharacteristicCallbacks {

@@ -37,7 +37,7 @@ BLECharacteristic *create_ip_characteristic(BLEService *service) {
   BLECharacteristic *c = service->createCharacteristic(
       BP_IP_CHAR_UUID,
       BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
-  c->setValue("IP: N/A");
+  c->setValue("");
   // c->notify();
   return c;
 }
