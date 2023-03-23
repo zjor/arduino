@@ -28,7 +28,7 @@ BLECharacteristic *create_wifi_status_characteristic(BLEService *service) {
   BLECharacteristic *c = service->createCharacteristic(
       BP_WIFI_STATUS_CHAR_UUID,
       BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
-  c->setValue("Status: Ready");
+  c->setValue(STATUS_READY);
   // c->notify();
   return c;
 }
