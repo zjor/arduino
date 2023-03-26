@@ -61,6 +61,7 @@ void wifi_event_handler(arduino_event_t *event) {
     bleProvisioning.set_wifi_status(STATUS_CONNECTED);
     break;
   case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+    bleProvisioning.set_bad_credentials();
     bleProvisioning.set_wifi_status(STATUS_DISCONNECTED);
     break;
   case ARDUINO_EVENT_WIFI_STA_GOT_IP:
@@ -77,17 +78,19 @@ void connect_to_wifi(void *param) {
   bleProvisioning.set_wifi_status(STATUS_CONNECTING);
   Serial.println("\nConnecting");
 
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED && !bleProvisioning.is_bad_credentials()) {
     Serial.print(".");
     delay(100);
   }
 
-  Serial.println("\nConnected to the WiFi network");
-  Serial.printf("\nGo to: http://%s\n", WiFi.localIP().toString().c_str());
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\nConnected to the WiFi network");
+    Serial.printf("\nGo to: http://%s\n", WiFi.localIP().toString().c_str());
 
-  bleProvisioning.set_ip_address(WiFi.localIP().toString().c_str());
+    bleProvisioning.set_ip_address(WiFi.localIP().toString().c_str());
 
-  server.begin();
+    server.begin();
+  }
 
   vTaskDelete(NULL);
 }

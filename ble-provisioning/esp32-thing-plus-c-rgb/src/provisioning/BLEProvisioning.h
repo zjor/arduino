@@ -19,6 +19,10 @@
 #define STATUS_DISCONNECTED   "DISCONNECTED"
 #define STATUS_GOT_IP         "GOT_IP"
 
+#define WIFI_SSID_SET_BIT             0
+#define WIFI_PASS_SET_BIT             1
+#define WIFI_BAD_CREDENTIALS_BIT      2
+
 typedef void (* t_void_func)();
 
 class BLEProvisioning: public BLECharacteristicCallbacks {
@@ -26,6 +30,7 @@ class BLEProvisioning: public BLECharacteristicCallbacks {
   private:
     bool _ssid_set = false;
     bool _password_set = false;
+    uint8_t _credentials_status = 0;
 
     BLECharacteristic* _ip_char;
     BLECharacteristic* _status_char;
@@ -45,6 +50,8 @@ class BLEProvisioning: public BLECharacteristicCallbacks {
     void set_ip_address(const char*ip_address);
     void set_wifi_status(const char* status);
 
+    void set_bad_credentials();
+    bool is_bad_credentials();
 };
 
 #endif

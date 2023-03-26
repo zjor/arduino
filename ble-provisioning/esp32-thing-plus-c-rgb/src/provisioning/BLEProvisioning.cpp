@@ -69,17 +69,21 @@ void BLEProvisioning::onWrite(BLECharacteristic *c) {
 
   if (c->getUUID().toString().compare(BP_WIFI_SSID_CHAR_UUID) == 0) {
     this->wifi_ssid = c->getValue();
-    this->_ssid_set = true;
+    this->_credentials_status |= 1 << WIFI_SSID_SET_BIT;
+    
     Serial.print("SSID set: ");
     Serial.println(this->wifi_ssid.c_str());
   } else if (c->getUUID().toString().compare(BP_WIFI_PASS_CHAR_UUID) == 0) {
     this->wifi_password = c->getValue();
-    this->_password_set = true;
+    this->_credentials_status |= 1 << WIFI_PASS_SET_BIT;
+
     Serial.print("Password set: ");
     Serial.println(this->wifi_password.c_str());
   }
 
-  if (this->_ssid_set && this->_password_set) {
+  if (this->_credentials_status & (1 << WIFI_SSID_SET_BIT) && 
+      this->_credentials_status & (1 << WIFI_PASS_SET_BIT)) {
+    this->_credentials_status = 0;
     this->_callback();
   }
 }
@@ -92,4 +96,12 @@ void BLEProvisioning::set_ip_address(const char *ip_address) {
 void BLEProvisioning::set_wifi_status(const char *status) {
   this->_status_char->setValue(status);
   this->_status_char->notify();
+}
+
+void BLEProvisioning::set_bad_credentials() {
+  this->_credentials_status |= (1 << WIFI_BAD_CREDENTIALS_BIT);
+}
+
+bool BLEProvisioning::is_bad_credentials() {
+  return this->_credentials_status & (1 << WIFI_BAD_CREDENTIALS_BIT);
 }
