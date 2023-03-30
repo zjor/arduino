@@ -7,7 +7,7 @@ bool has_credentials() {
   return EEPROM.read(0) == 0x42 /* credentials marker */;
 }
 
-void save_credentials(char *ssid, char *pass) {
+void save_credentials(const char *ssid, const char *pass) {
   char buf[EEPROM_SIZE];
   sprintf(buf, "%c%s:%s", 0x42, ssid, pass);
   EEPROM.writeString(0, buf);

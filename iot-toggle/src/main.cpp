@@ -7,6 +7,7 @@
 #include "bot_client.h"
 #include "hue_led.h"
 #include "credentials_storage.h"
+#include "BLEProvisioning.h"
 
 #define R_PIN 14
 #define G_PIN 15
@@ -26,7 +27,7 @@ typedef enum {
   ONLINE              = 1,
   TOGGLE_IDLE         = 2,
   TOGGLE_BUSY         = 3,
-  SMART_CONFIG        = 4
+  BLE_PROVISIONING    = 4
 } device_status_t;
 
 device_status_t device_status = STARTED;
@@ -38,24 +39,26 @@ void handle_connecting_state();
 void handle_online_state();
 void handle_idle_state();
 void handle_busy_state();
-void handle_smart_config_state();
+void handle_ble_provisioning_state();
 
 /* transition handlers */
 void on_connecting();
 void on_online();
 void on_idle();
 void on_busy();
-void on_smart_config();
+void on_start_ble_provisioning();
 
 void (*handlers[])() = {
   handle_connecting_state,
   handle_online_state,
   handle_idle_state,
   handle_busy_state,
-  handle_smart_config_state
+  handle_ble_provisioning_state
 };
 
 // end of FSM definition
+
+BLEProvisioning bleProvisioning;
 
 HueLed led(R_PIN, G_PIN, B_PIN);
 
@@ -66,6 +69,30 @@ BotClient bot(BOT_LOGIN, BOT_PASSWORD);
 unsigned long now_millis = 0;
 unsigned long toggle_elapsed_millis = 0;
 
+void wifi_event_handler(arduino_event_t *event) {  
+  switch (event->event_id) {
+  case ARDUINO_EVENT_WIFI_STA_CONNECTED:
+    bleProvisioning.set_wifi_status(STATUS_CONNECTED);
+    break;
+  case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+    bleProvisioning.set_bad_credentials();
+    bleProvisioning.set_wifi_status(STATUS_DISCONNECTED);
+    break;
+  case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+    bleProvisioning.set_wifi_status(STATUS_GOT_IP);
+    break;
+  }
+}
+
+void onCredentialsReady() {
+  WiFi.onEvent(wifi_event_handler, ARDUINO_EVENT_MAX);
+  const char *ssid = bleProvisioning.wifi_ssid.c_str();
+  const char *password = bleProvisioning.wifi_password.c_str();
+  save_credentials(ssid, password);
+  bleProvisioning.set_wifi_status(STATUS_CONNECTING);
+  set_status(CONNECTING);
+}
+
 void update_led(int toggle_state) {
   if (toggle_state == LOW /* idle */) {
     led.set_rgb(0, 255, 0);
@@ -75,6 +102,7 @@ void update_led(int toggle_state) {
 }
 
 void setup() {
+  WiFi.mode(WIFI_STA);
   EEPROM.begin(EEPROM_SIZE);
   led.init();
 
@@ -83,7 +111,15 @@ void setup() {
   
   Serial.begin(115200);
 
-  set_status(has_credentials() ? CONNECTING : SMART_CONFIG);
+  if (has_credentials()) {
+    set_status(CONNECTING);
+    // TODO: set creds to BLE
+  } else {
+    set_status(BLE_PROVISIONING);
+  }
+
+  bleProvisioning.set_on_credentials_ready_callback(&onCredentialsReady);
+  bleProvisioning.init("ESP32 :: IoT Toggle");
 
   now_millis = millis();
 }
@@ -109,8 +145,8 @@ void set_status(device_status_t new_status) {
       on_idle(); break;
     case TOGGLE_BUSY:
       on_busy(); break;
-    case SMART_CONFIG:
-      on_smart_config(); break;
+    case BLE_PROVISIONING:
+      on_start_ble_provisioning(); break;
   }
   Serial.printf("Status transition: %d -> %d\n", device_status, new_status);
   device_status = new_status;
@@ -137,18 +173,17 @@ void on_connecting() {
   WiFi.begin(ssid, password);
 }
 
-void on_smart_config() {
+void on_start_ble_provisioning() {
   erase_credentials();
-
-  Serial.println("Starting SmartConfig");
-  WiFi.mode(WIFI_AP_STA);
-  WiFi.beginSmartConfig();
 }
 
 void on_online() {
+  IPAddress ipAddress = WiFi.localIP();
+  bleProvisioning.set_ip_address(ipAddress.toString().c_str());
+
   Serial.println("\nConnected!");
   Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
+  Serial.println(ipAddress);
 
   bot.send_message(MQTT_TOPIC, "online");
 }
@@ -215,7 +250,7 @@ void handle_connecting_state() {
   }
 
   if (digitalRead(SWITCH_B_PIN) == LOW) {
-    set_status(SMART_CONFIG);
+    set_status(BLE_PROVISIONING);
   }
 
 }
@@ -235,7 +270,7 @@ void handle_idle_state() {
   }
 
   if (digitalRead(SWITCH_B_PIN) == LOW) {
-    set_status(SMART_CONFIG);
+    set_status(BLE_PROVISIONING);
   }
 
   int toggle_state = digitalRead(SWITCH_A_PIN);
@@ -254,7 +289,7 @@ void handle_busy_state() {
   }
 
   if (digitalRead(SWITCH_B_PIN) == LOW) {
-    set_status(SMART_CONFIG);
+    set_status(BLE_PROVISIONING);
   }
 
   int toggle_state = digitalRead(SWITCH_A_PIN);
@@ -265,28 +300,7 @@ void handle_busy_state() {
   }
 }
 
-void handle_smart_config_state() {
-  if (!WiFi.smartConfigDone()) {    
+void handle_ble_provisioning_state() {
     print_dot_progress();
     blink_blue();
-  } else {
-    Serial.println("SmartConfig is done. Connecting...");
-    while (WiFi.status() != WL_CONNECTED) {
-      print_dot_progress();
-      hue_rotate();
-      delay(10);
-      // TODO: check smartConfig button, if active -> go to smartConfig
-    }
-
-    char *ssid = strdup(WiFi.SSID().c_str());
-    char *password = strdup(WiFi.psk().c_str());
-
-    Serial.println("\nStoring credentials received via SmartConfig:");
-    Serial.printf("  SSID: %s\n", ssid);
-    Serial.printf("  Password: %s\n", password);
-
-    save_credentials(ssid, password);
-    set_status(ONLINE);
-  }
-
 }
