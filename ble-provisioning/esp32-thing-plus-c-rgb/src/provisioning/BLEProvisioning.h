@@ -2,7 +2,6 @@
 #define BLE_PROVISIONING_H
 
 #include <Arduino.h>
-
 #include <BLEDevice.h>
 #include <BLEUtils.h>
 #include <BLEServer.h>
@@ -26,31 +25,90 @@
 typedef void (* t_void_func)();
 
 class BLEProvisioning: public BLECharacteristicCallbacks {
-
   private:
-    bool _ssid_set = false;
-    bool _password_set = false;
-    uint8_t _credentials_status = 0;
-
-    BLECharacteristic* _ip_char;
-    BLECharacteristic* _status_char;
-
-    BLECharacteristicCallbacks* _char_callback;
-
-    t_void_func _callback;
-    
-    void onWrite(BLECharacteristic* c) override;
-
-  public:
+    bool _ssid_set;
+    bool _password_set;
+    uint8_t _credentials_status;
     std::string wifi_ssid;
     std::string wifi_password;
-
+    BLECharacteristic* _ip_char;
+    BLECharacteristic* _status_char;
+    BLECharacteristicCallbacks* _char_callback;
+    t_void_func _callback;
+    /**
+     * @brief Method create BLE Characteristic, associated with wifi ssid.
+     * @param[in] service - Service.
+    */
+    void create_wifi_ssid_characteristic(BLEService *service);
+    /**
+     * @brief Method create BLE Characteristic, associated with wifi password.
+     * @param[in] service - Service.
+    */
+    void create_wifi_password_characteristic(BLEService *service);
+    /**
+     * @brief Method create BLE Characteristic, associated with wifi status.
+     * @param[in] service - Service.
+     * @return Characteristic of the wifi status.
+    */
+    BLECharacteristic *create_wifi_status_characteristic(BLEService *service);
+    /**
+     * @brief Method create BLE Characteristic, associated with ip characteristic.
+     * @param[in] service - Service.
+     * @return Characteristic of the wifi status.
+    */
+    BLECharacteristic *create_ip_characteristic(BLEService *service);
+    /**
+    * @brief Callback function to support a write request.
+    * @param[in] c - The characteristic that is the source of the event.
+    */
+    void onWrite(BLECharacteristic* c) override;
+  public:
+    /**
+     * @brief Constructor.
+    */
+    BLEProvisioning();
+    /**
+     * @brief Destructor.
+    */
+    ~BLEProvisioning();
+    /**
+     * @brief Get-method for wifi ssid.
+     * @return Wifi SSID.
+    */
+    std::string get_wifi_ssid();
+    /**
+     * @brief Get-method for wifi password.
+     * @return Wifi password.
+    */
+    std::string get_wifi_password();
+    /**
+     * @brief Method to initialize characteristics for new BLE device. 
+     * @param[in] device_name - Name of the device.
+    */
     void init(const char *device_name);
+    /**
+     * @brief Method to save new
+     * @param[in] callback - Callback function.
+    */
     void set_on_credentials_ready_callback(t_void_func callback);
+    /**
+     * @brief Method to set new ip address of the device.
+     * @param[in] ip_address - Ip address.
+    */
     void set_ip_address(const char*ip_address);
+    /**
+     * @brief Method to set new wifi status of the device.
+     * @param[in] status - Wifi status.
+    */
     void set_wifi_status(const char* status);
-
+    /**
+     * @brief Method to change the credentials status, in case connection has failed.
+    */
     void set_bad_credentials();
+    /**
+     * @brief Method to check wifi credentials.
+     * @return True - in case the wrong credentials has been set, in other cases - false.
+    */
     bool is_bad_credentials();
 };
 
