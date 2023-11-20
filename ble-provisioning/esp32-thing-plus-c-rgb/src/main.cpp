@@ -1,23 +1,18 @@
-#include <Arduino.h>
 #include <ArduinoJson.h>
 #include <WiFi.h>
 #include <aWOT.h>
-
 #include "StaticFiles.h"
 #include "provisioning/BLEProvisioning.h"
 
 BLEProvisioning bleProvisioning;
-
 WiFiServer server(80);
 Application app;
-
 uint8_t r = 0, g = 0, b = 0;
 
 void cors_options(Request &req, Response &res) {
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Headers", "*");
   res.set("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS");
-  
   res.sendStatus(204);
 }
 
@@ -73,8 +68,8 @@ void wifi_event_handler(arduino_event_t *event) {
 void connect_to_wifi(void *param) {
   WiFi.mode(WIFI_STA);
   WiFi.onEvent(wifi_event_handler, ARDUINO_EVENT_MAX);
-  WiFi.begin(bleProvisioning.wifi_ssid.c_str(),
-             bleProvisioning.wifi_password.c_str());
+  WiFi.begin(bleProvisioning.get_wifi_ssid().c_str(),
+             bleProvisioning.get_wifi_password().c_str());
   bleProvisioning.set_wifi_status(STATUS_CONNECTING);
   Serial.println("\nConnecting");
 
@@ -82,7 +77,6 @@ void connect_to_wifi(void *param) {
     Serial.print(".");
     delay(100);
   }
-
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("\nConnected to the WiFi network");
     Serial.printf("\nGo to: http://%s\n", WiFi.localIP().toString().c_str());
@@ -91,14 +85,12 @@ void connect_to_wifi(void *param) {
 
     server.begin();
   }
-
   vTaskDelete(NULL);
 }
 
 void onCredentialsReady() {
   xTaskCreate(connect_to_wifi, "ConnectTask", 10000, NULL, 1, NULL);
 }
-
 
 void setup() {
   Serial.begin(115200);
